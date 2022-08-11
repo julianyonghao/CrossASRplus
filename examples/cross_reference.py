@@ -16,8 +16,8 @@ if __name__ == "__main__":
     
     crossasr = CrossASR(tts=tts, asrs=asrs, output_dir=config["output_dir"], recompute=True)
 
-    text = "software engineering conference"
-    filename = "software_engineering_conference"
+    text = "hello world google"
+    filename = "hello_world_google"
 
     crossasr.processText(text=text, filename=filename)
     crossasr.printResult(text=text, filename=filename)

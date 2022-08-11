@@ -32,8 +32,10 @@ from crossasr.text import Text
 
 from wit import Wit as WitAPI
 
+import nemo.collections.asr as nemo_asr
+
 WIT_ACCESS_TOKEN = os.getenv("WIT_ACCESS_TOKEN")
-wit_client = WitAPI(WIT_ACCESS_TOKEN)
+wit_client = WitAPI("5FJD4QDFF6XXQCU3XXAPCCQOSSGBGYFQ")
 
 tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
@@ -211,6 +213,10 @@ def witRecognizeAudio(audio_fpath):
     # print(f"Wit transcription: {transcription}")
     return transcription
 
+def nemoRecognizeAudio(audio_fpath):
+    asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("nvidia/stt_en_conformer_ctc_large")
+    transcription = asr_model.transcribe([audio_fpath])
+    return transcription[0]
 
 def create_huggingface_estimator_by_name(name: str):
     # https://huggingface.co/transformers/custom_datasets.html
