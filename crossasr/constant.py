@@ -10,3 +10,5 @@ CASE_DIR = "case/"
 
 AUDIO_DIR = "audio/"
 TRANSCRIPTION_DIR = "transcription/"
+
+CASUAL_DIR = "casual_data/"

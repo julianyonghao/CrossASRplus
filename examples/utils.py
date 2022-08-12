@@ -45,7 +45,17 @@ def getTTS(tts_name: str):
     for tts in tts_pool :
         if tts_name == tts.getName() :
             return tts
-    raise NotImplementedError("There is a TTS name problem")    
+    raise NotImplementedError("There is a TTS name problem")
+
+def getTTSS(tts_names):
+    ttss = []
+    for tts in tts_pool:
+        for tts_name in tts_names :
+            if tts_name == tts.getName():
+                ttss.append(tts)
+    if len(tts_names) == len(ttss) :
+        return ttss
+    raise NotImplementedError("There is an TTS name problem")
 
 
 def getASR(asr_name: str):
@@ -125,6 +135,9 @@ def espeakGenerateAudio(text, audio_fpath) :
     os.system(cmd)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def getCCVoice(file_name, audio_fpath):
+    raise NotImplementedError
 
 def deepspeechRecognizeAudio(audio_fpath):
     cmd = "deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer asr_models/deepspeech/deepspeech-0.9.3-models.scorer --audio " + audio_fpath

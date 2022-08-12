@@ -4,20 +4,29 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 import sys
 import utils
+import os
 
-from crossasr import CrossASR
+from crossasr.crossasrmodi import CrossASRmodi
+
+from crossasr.constant import CASUAL_DIR
 
 if __name__ == "__main__":
     
     config = utils.readJson(sys.argv[1]) # read json configuration file
 
-    tts = utils.getTTS(config["tts"])
+    tts = utils.getTTSS(config["tts"])
     asrs = utils.getASRS(config["asrs"])
     
-    crossasr = CrossASR(tts=tts, asrs=asrs, output_dir=config["output_dir"], recompute=True)
+    crossasr = CrossASRmodi(tts=tts, asrs=asrs, output_dir=config["output_dir"], recompute=True)
 
-    text = "hello world google"
-    filename = "hello_world_google"
+    cc_filename = "1140_00"
+    filename = "1140_00"
 
-    crossasr.processText(text=text, filename=filename)
+    casual_dir = os.path.join(CASUAL_DIR, cc_filename)
+    fpath = os.path.join(casual_dir, cc_filename + ".txt")
+    file = open(fpath, "r")
+    text = file.readlines()[0]
+    file.close()
+
+    crossasr.processText(text=text, filename=filename, cc_filename=cc_filename)
     crossasr.printResult(text=text, filename=filename)
