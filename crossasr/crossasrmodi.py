@@ -15,6 +15,7 @@ from crossasr.tts import TTS
 from crossasr.asr import ASR
 
 from jiwer import wer
+#from evaluate import load
 
 
 class CrossASRmodi:
@@ -41,6 +42,9 @@ class CrossASRmodi:
         self.estimator = estimator
         # self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
         # #removed this temporarily by Julian 12/08 for testing
+
+        # Zi Qian added this 23/8
+        self.wer_temp = {};
 
         if seed:
             crossasr.utils.set_seed(seed)
@@ -102,6 +106,7 @@ class CrossASRmodi:
         self.execution_time_dir = os.path.join(output_dir, EXECUTION_TIME_DIR)
         self.case_dir = os.path.join(output_dir, CASE_DIR)
 
+    # Zi Qian updated this function 23/8
     def caseDeterminer(self, text: str, transcriptions: str):
         # word error rate
         wers = {}
@@ -125,7 +130,7 @@ class CrossASRmodi:
             for k in transcriptions.keys():
                 case[k] = INDETERMINABLE_TEST_CASE
 
-        return case
+        return wers, case
 
     def saveCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
         case_dir = os.path.join(case_dir, tts_name, asr_name)
@@ -135,16 +140,35 @@ class CrossASRmodi:
         file.write(case)
         file.close()
 
+    # 23/8 - Zi Qian: save WER (write to second line)
+    def saveCaseWER(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
+        case_dir = os.path.join(case_dir, tts_name, asr_name)
+        make_dir(case_dir)
+        fpath = os.path.join(case_dir, filename + ".txt")
+        file = open(fpath, "a")
+        file.write("\n")
+        file.write(case)
+        file.close()
+
     def getCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str):
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         fpath = os.path.join(case_dir, filename + ".txt")
         file = open(fpath, "r")
         case = int(file.readlines()[0][0])
         file.close()
+        return case
 
+    # 23/8 - Zi Qian: get WER (write to second line)
+    def getCaseWER(self, case_dir: str, tts_name: str, asr_name: str, filename: str):
+        case_dir = os.path.join(case_dir, tts_name, asr_name)
+        fpath = os.path.join(case_dir, filename + ".txt")
+        file = open(fpath, "r")
+        case = float(file.readlines()[1])
+        file.close()
         return case
 
     # Julian updated this function 12/08
+    # Zi Qian updated this function 23/8
     def printResult(self, text: str, filename: str):
 
         print()
@@ -166,12 +190,19 @@ class CrossASRmodi:
             print(f"Cases: {tts.getName()}")
             for asr in self.asrs:
                 case = self.getCase(self.case_dir, tts.getName(), asr.getName(), filename)
+                wer = self.getCaseWER(self.case_dir, tts.getName(), asr.getName(), filename)
+                
                 if case == FAILED_TEST_CASE:
                     print(f"\t {asr.getName()}: failed test case")
+                    print(f"\t WER: {wer}")
+
                 elif case == SUCCESSFUL_TEST_CASE:
                     print(f"\t {asr.getName()}: successful test case")
+                    print(f"\t WER: {wer}")
                 else:
                     print(f"\t {asr.getName()}: indeterminable test case")
+                    print(f"\t WER: {wer}")
+
         print()
 
     def printStatistic(self):
@@ -220,7 +251,7 @@ class CrossASRmodi:
                     os.path.relpath(wavfile, base_dir)
                     save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
 
-            ## add execution time for generating audio
+            # add execution time for generating audio
             execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
 
             transcription_dir = os.path.join(self.transcription_dir, tts.getName())
@@ -276,8 +307,12 @@ class CrossASRmodi:
                 #     print(cases)
                 #     print()
 
-                for asr_name, case in cases.items():
+                for asr_name, case in cases[1].items():
                     self.saveCase(self.case_dir, tts.getName(), asr_name, filename, str(case))
+
+                # write WER into file
+                for asr_name, case in cases[0].items():
+                    self.saveCaseWER(self.case_dir, tts.getName(), asr_name, filename, str(case))
 
         # print(f"Execution time: {execution_time}")
         return cases, execution_time
