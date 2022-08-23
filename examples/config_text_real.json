@@ -1,0 +1,5 @@
+{
+    "output_dir": "output/casual_trial/",
+    "tts" : ["google","real"],
+    "asrs" : "nemo"
+}

@@ -40,6 +40,7 @@ class CrossASRmodi:
         self.max_num_retry = max_num_retry
         self.text_batch_size = text_batch_size
         self.estimator = estimator
+        self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
         # self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
         # #removed this temporarily by Julian 12/08 for testing
 
@@ -63,9 +64,10 @@ class CrossASRmodi:
 
     def get_outputfile_for_failed_test_case(self):
         asrs_dir = "_".join([asr.getName() for asr in self.asrs])
+        ttss_dir = "_".join([tts.getName() for tts in self.tts])
         result_dir = os.path.join(self.output_dir,
                                   "result",
-                                  self.tts.getName(),
+                                  ttss_dir,
                                   asrs_dir,
                                   f"num_iteration_{self.num_iteration}",
                                   f"text_batch_size_{self.text_batch_size if self.text_batch_size else 'global'}")
@@ -226,6 +228,7 @@ class CrossASRmodi:
         :returns execution time:
         """
         execution_time = 0.
+        cases_list = []
         for tts in self.tts:
             directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
             make_dir(directory)
@@ -292,7 +295,7 @@ class CrossASRmodi:
 
                     num_retry += 1
 
-                transcriptions[asr.getName()] = preprocess_text(transcription)
+                transcriptions[tts.getName() + "_" + asr.getName()] = preprocess_text(transcription)
 
                 ## add execution time for generating audio
                 execution_time += get_execution_time(
@@ -306,6 +309,9 @@ class CrossASRmodi:
                 #     print(transcriptions["wav2vec2"])
                 #     print(cases)
                 #     print()
+            cases_list.append(cases)
+            for asr_name, case in cases.items():
+                self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
 
                 for asr_name, case in cases[1].items():
                     self.saveCase(self.case_dir, tts.getName(), asr_name, filename, str(case))
@@ -315,7 +321,7 @@ class CrossASRmodi:
                     self.saveCaseWER(self.case_dir, tts.getName(), asr_name, filename, str(case))
 
         # print(f"Execution time: {execution_time}")
-        return cases, execution_time
+        return cases_list, execution_time
 
     def processOneIteration(self, curr_texts: [Text], processed_texts: [Text], cases):
         start_time = time.time()
@@ -337,8 +343,8 @@ class CrossASRmodi:
             # print("================")
             # print(f"{text.getId()}")
             case, exec_time = self.processText(
-                text=text.getText(), filename=f"{text.getId()}")
-            curr_cases.append(case)
+                text=text.getText(), filename=f"{text.getId()}", cc_filename=text.getId())
+            curr_cases.extend(case)
             execution_time += exec_time
             i += 1
             if execution_time + time.time() - start_time > self.time_budget:
@@ -347,7 +353,6 @@ class CrossASRmodi:
 
         curr_processed_texts = curr_texts[:i]
         unprocessed_texts = curr_texts[i:]
-
         return curr_cases, curr_processed_texts, unprocessed_texts
 
     def processCorpus(self, texts: [Text]):
@@ -386,7 +391,7 @@ class CrossASRmodi:
                     remaining_texts.extend(unprocessed_texts)
                 else:
                     remaining_texts = unprocessed_texts
-
+                print(cases)
                 num_failed_test_cases.append(calculate_cases(cases, mode=FAILED_TEST_CASE))
                 for asr in self.asrs:
                     num_failed_test_cases_per_asr[asr.getName()].append(calculate_cases_per_asr(

@@ -14,6 +14,7 @@ import torch
 
 from gtts import gTTS
 
+from crossasr.textmodi import TextModi
 from tts.rv import ResponsiveVoice
 from tts.google import Google
 from tts.espeak import Espeak
@@ -100,6 +101,15 @@ def readCorpus(corpus_fpath: str) :
     for text in corpus:
         texts.append(Text(i, text[:-1]))
         i += 1
+    return texts
+
+def readDirAsCorpus(corpus_fpath: str) :
+    texts = []
+    for subdir, dirs, files in os.walk(corpus_fpath):
+        for dir in dirs:
+            file = open(os.path.join(corpus_fpath, dir, dir + ".txt"))
+            text = file.readlines()
+            texts.append(TextModi(dir, text[0]))
     return texts
     
 def parseConfig(config):
@@ -228,6 +238,7 @@ def witRecognizeAudio(audio_fpath):
 
 def nemoRecognizeAudio(audio_fpath):
     asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("nvidia/stt_en_conformer_ctc_large")
+    # asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_citrinet_512")
     transcription = asr_model.transcribe([audio_fpath])
     return transcription[0]
 
