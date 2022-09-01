@@ -160,3 +160,4 @@ results/
 examples/corpus/
 examples/output/
 examples/asr_models/
+examples/casual_data

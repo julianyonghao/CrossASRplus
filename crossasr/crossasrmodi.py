@@ -15,7 +15,9 @@ from crossasr.tts import TTS
 from crossasr.asr import ASR
 
 from jiwer import wer
-#from evaluate import load
+
+
+# from evaluate import load
 
 
 class CrossASRmodi:
@@ -193,7 +195,7 @@ class CrossASRmodi:
             for asr in self.asrs:
                 case = self.getCase(self.case_dir, tts.getName(), asr.getName(), filename)
                 wer = self.getCaseWER(self.case_dir, tts.getName(), asr.getName(), filename)
-                
+
                 if case == FAILED_TEST_CASE:
                     print(f"\t {asr.getName()}: failed test case")
                     print(f"\t WER: {wer}")
@@ -310,15 +312,15 @@ class CrossASRmodi:
                 #     print(cases)
                 #     print()
             cases_list.append(cases)
-            for asr_name, case in cases.items():
+            # for asr_name, case in cases.items():
+            #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
+            print(cases)
+            for asr_name, case in cases[1].items():
                 self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
 
-                for asr_name, case in cases[1].items():
-                    self.saveCase(self.case_dir, tts.getName(), asr_name, filename, str(case))
-
-                # write WER into file
-                for asr_name, case in cases[0].items():
-                    self.saveCaseWER(self.case_dir, tts.getName(), asr_name, filename, str(case))
+            # write WER into file
+            for asr_name, case in cases[0].items():
+                self.saveCaseWER(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
 
         # print(f"Execution time: {execution_time}")
         return cases_list, execution_time
@@ -458,7 +460,7 @@ class CrossASRmodi:
 def calculate_cases(cases, mode: str):
     count = 0
     for c in cases:
-        for _, v in c.items():
+        for _, v in c[1].items():
             if v == mode:
                 count += 1
     return count
@@ -467,8 +469,8 @@ def calculate_cases(cases, mode: str):
 def calculate_cases_per_asr(cases, mode: str, asr_name: str):
     count = 0
     for c in cases:
-        for k, v in c.items():
-            if k == asr_name and v == mode:
+        for k, v in c[1].items():
+            if k.split("_")[1] == asr_name and v == mode:
                 count += 1
     return count
 
