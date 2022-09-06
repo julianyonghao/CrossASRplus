@@ -3,7 +3,7 @@ import numpy as np
 import json
 
 import crossasr.constant
-from crossasr.constant import INDETERMINABLE_TEST_CASE, SUCCESSFUL_TEST_CASE, FAILED_TEST_CASE
+from crossasr.constant import INDETERMINABLE_TEST_CASE, SUCCESSFUL_TEST_CASE, FAILED_TEST_CASE,FALSE_ALARM_TEST_CASE
 from crossasr.constant import DATA_DIR, EXECUTION_TIME_DIR, CASE_DIR, CASUAL_DIR
 from crossasr.constant import AUDIO_DIR, TRANSCRIPTION_DIR
 
@@ -116,15 +116,37 @@ class CrossASRmodi:
         wers = {}
 
         is_determinable = False
+        is_false_alarm = False
+    
+        # print(transcriptions)
+        # {'google_wit': 'is technology making our attention span shorter'}
+        # ({'google_wit': 0.0}, {'google_wit': 2})
+        # TESTTTT
+        # {'casual_wit': 'is technology making our attention span shorter'}
+        # ({'casual_wit': 0.0}, {'casual_wit': 2})
+        # output --> casual_data --> enhanced/mono --> ASR --> id_flag.text
 
         for k, transcription in transcriptions.items():
             word_error_rate = wer(text, transcription)
             wers[k] = word_error_rate
             if word_error_rate == 0:
                 is_determinable = True
+                tts = k.split('_')[0]
+                if tts == "casual":
+                    is_false_alarm = True
 
         case = {}
-        if is_determinable:
+        
+        # if determinable and casual pass:
+        #     check who failed 
+        # if is_determinable and ! casual pass:
+        if is_determinable and is_false_alarm:
+            for k in transcriptions.keys():
+                if wers[k] == 0:
+                    case[k] = SUCCESSFUL_TEST_CASE
+                else:
+                    case[k] = FALSE_ALARM_TEST_CASE
+        if is_determinable and not is_false_alarm:
             for k in transcriptions.keys():
                 if wers[k] == 0:
                     case[k] = SUCCESSFUL_TEST_CASE

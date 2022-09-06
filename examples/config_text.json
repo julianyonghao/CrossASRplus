@@ -1,5 +1,7 @@
 {
     "output_dir": "output/casual_test/",
     "tts" : ["casual", "google"],
-    "asrs" : ["nemo", "wit"]
+    "asrs" : ["wit"]
 }
+
+   

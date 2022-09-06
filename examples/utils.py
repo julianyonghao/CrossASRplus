@@ -36,7 +36,7 @@ from wit import Wit as WitAPI
 import nemo.collections.asr as nemo_asr
 
 WIT_ACCESS_TOKEN = os.getenv("WIT_ACCESS_TOKEN")
-wit_client = WitAPI("5FJD4QDFF6XXQCU3XXAPCCQOSSGBGYFQ")
+wit_client = WitAPI("CNNRVCTEC667JGLJGFYHR2PL67HBNUQD")
 
 tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")

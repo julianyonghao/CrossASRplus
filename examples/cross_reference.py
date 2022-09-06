@@ -19,10 +19,12 @@ if __name__ == "__main__":
     
     crossasr = CrossASRmodi(tts=tts, asrs=asrs, output_dir=config["output_dir"], recompute=True)
 
-    cc_filename = "1140_00"
-    filename = "1140_00"
+    cc_filename = "1140_00"     # Input filename --> to get the audio and transcription files
+    filename = "1140_00"        # Create a file for output
 
     casual_dir = os.path.join(CASUAL_DIR, cc_filename)
+    
+    # Path to transcription file (.txt file)
     fpath = os.path.join(casual_dir, cc_filename + ".txt")
     file = open(fpath, "r")
     text = file.readlines()[0]
@@ -30,3 +32,4 @@ if __name__ == "__main__":
 
     crossasr.processText(text=text, filename=filename, cc_filename=cc_filename)
     crossasr.printResult(text=text, filename=filename)
+
