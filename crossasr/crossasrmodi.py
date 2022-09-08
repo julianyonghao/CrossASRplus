@@ -1,3 +1,4 @@
+from operator import is_
 import os, time, random
 import numpy as np
 import json
@@ -116,7 +117,6 @@ class CrossASRmodi:
         wers = {}
 
         is_determinable = False
-        is_false_alarm = False
     
         # print(transcriptions)
         # {'google_wit': 'is technology making our attention span shorter'}
@@ -131,22 +131,52 @@ class CrossASRmodi:
             wers[k] = word_error_rate
             if word_error_rate == 0:
                 is_determinable = True
+
+        case = {}
+    
+        if is_determinable:
+            for k in transcriptions.keys():
+                if wers[k] == 0:
+                    case[k] = SUCCESSFUL_TEST_CASE
+                else:
+                    case[k] = FAILED_TEST_CASE
+        else:
+            for k in transcriptions.keys():
+                case[k] = INDETERMINABLE_TEST_CASE
+
+        return wers, case
+
+    def casesDeterminer(self, text: str, transcriptions: str):
+        # word error rate
+        wers = {}
+
+        is_determinable = False
+
+        is_false_alarm = False
+    
+        print(transcriptions)
+        # {
+        # 'google_wit': 'is technology making our attention span shorter', 
+        # 'casual_wit': 'is technology making our attention span shorter'
+        # }
+
+        for k, transcription in transcriptions.items():
+            word_error_rate = wer(text, transcription)
+            wers[k] = word_error_rate
+            if word_error_rate == 0:
+                is_determinable = True
                 tts = k.split('_')[0]
-                if tts == "casual":
+                if tts == 'casual':
                     is_false_alarm = True
 
         case = {}
-        
-        # if determinable and casual pass:
-        #     check who failed 
-        # if is_determinable and ! casual pass:
-        if is_determinable and is_false_alarm:
+        if is_determinable and  is_false_alarm:
             for k in transcriptions.keys():
                 if wers[k] == 0:
                     case[k] = SUCCESSFUL_TEST_CASE
                 else:
                     case[k] = FALSE_ALARM_TEST_CASE
-        if is_determinable and not is_false_alarm:
+        elif is_determinable and not is_false_alarm:
             for k in transcriptions.keys():
                 if wers[k] == 0:
                     case[k] = SUCCESSFUL_TEST_CASE
@@ -159,6 +189,7 @@ class CrossASRmodi:
         return wers, case
 
     def saveCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
+        print(case_dir, tts_name, asr_name, filename, case)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         make_dir(case_dir)
         fpath = os.path.join(case_dir, filename + ".txt")
@@ -168,6 +199,7 @@ class CrossASRmodi:
 
     # 23/8 - Zi Qian: save WER (write to second line)
     def saveCaseWER(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
+        print(case_dir, tts_name, asr_name, filename, case)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         make_dir(case_dir)
         fpath = os.path.join(case_dir, filename + ".txt")
@@ -177,6 +209,7 @@ class CrossASRmodi:
         file.close()
 
     def getCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str):
+        print(case_dir, tts_name, asr_name, filename)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         fpath = os.path.join(case_dir, filename + ".txt")
         file = open(fpath, "r")
@@ -253,6 +286,7 @@ class CrossASRmodi:
         """
         execution_time = 0.
         cases_list = []
+        transcriptions = {}
         for tts in self.tts:
             directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
             make_dir(directory)
@@ -283,7 +317,7 @@ class CrossASRmodi:
 
             transcription_dir = os.path.join(self.transcription_dir, tts.getName())
 
-            transcriptions = {}
+            # transcriptions = {}
             for asr in self.asrs:
                 directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
                 make_dir(directory)
@@ -293,7 +327,8 @@ class CrossASRmodi:
                     start_time = time.time()
                     # TODO:
                     # change recognize audio -> input audio instead of fpath
-                    # audio = asr.loadAudio(audio_fpath=audio_fpath)
+                    # audio = asr.
+                    # loadAudio(audio_fpath=audio_fpath)
                     # transcription = asr.recognizeAudio(audio=audio)
                     # asr.saveTranscription(transcription_fpath, transcription)
                     transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
@@ -325,7 +360,9 @@ class CrossASRmodi:
                 execution_time += get_execution_time(
                     fpath=time_for_recognizing_audio_fpath)
 
-                cases = self.caseDeterminer(text, transcriptions)
+                # cases = self.caseDeterminer(text, transcriptions)
+                # print(cases)
+                # ({'casual_wit': 0.0}, {'casual_wit': 0})
                 # print(transcriptions)
                 # print(cases)
                 # if sum(cases.values()) == 0 :
@@ -333,16 +370,36 @@ class CrossASRmodi:
                 #     print(transcriptions["wav2vec2"])
                 #     print(cases)
                 #     print()
-            cases_list.append(cases)
+        cases = self.casesDeterminer(text, transcriptions)
+        # ({'casual_wit': 0.0}, {'casual_wit': 0})
+        # cases_list: [({'google_wit': 0.0}, {'google_wit': 2}), ({'casual_wit': 0.0}, {'casual_wit': 0})] 
+        # cases: ({'google_wit': 0.0, 'casual_wit': 0.0}, {'google_wit': 2, 'casual_wit': 2})
+       
+        # To re-create cases list 
+        for k, value in cases[0].items():
+            wer_obj = {}
+            case_obj = {}
+            wer_obj[k] = value 
+            case_obj[k] = cases[1][k]
+            tuple = (wer_obj, case_obj)
+            cases_list.append(tuple)
+        #cases_list.append(cases)
+        print('cases list')
+        print(cases_list)
             # for asr_name, case in cases.items():
             #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
-            print(cases)
-            for asr_name, case in cases[1].items():
-                self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
+        print(cases) #({'casual_wit': 0.0}, {'casual_wit': 2})
+        for tuple in cases_list:
+            for asr_name, case in tuple[1].items():
+                print(asr_name)
+                print(case)
+                self.saveCase(self.case_dir, asr_name.split("_")[0], asr_name.split("_")[1], filename, str(case))
 
             # write WER into file
-            for asr_name, case in cases[0].items():
-                self.saveCaseWER(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
+            for asr_name, case in tuple[0].items():
+                print(asr_name)
+                print(case)
+                self.saveCaseWER(self.case_dir, asr_name.split("_")[0], asr_name.split("_")[1], filename, str(case))
 
         # print(f"Execution time: {execution_time}")
         return cases_list, execution_time
