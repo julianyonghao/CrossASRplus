@@ -14,7 +14,6 @@ if __name__ == "__main__":
     tts = utils.getTTSS(config["tts"])
     asr = utils.getASR(config["asrs"])
     estimator = utils.getEstimator(config["estimator"])
-    cc_audio_type = "audio_raw"
 
     crossasr = CrossASRmodi(tts=tts, asr=asr, estimator=estimator, **utils.parseConfig(config))
 

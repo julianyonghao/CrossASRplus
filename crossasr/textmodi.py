@@ -12,6 +12,9 @@ class TextModi:
     def __lt__(self, other):
         return (self.id, self.text) < (other.id, other.text)
 
+    def __str__(self):
+        return self.id, self.text
+
     def getId(self):
         return self.id
 

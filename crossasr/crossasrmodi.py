@@ -24,7 +24,7 @@ from crossasr.textmodi import TextModi
 
 class CrossASRmodi:
     def __init__(self, tts: [TTS], asr: ASR, output_dir: "", recompute=False, num_iteration=5,
-                 time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None):
+                 time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None, audio_type="audio_raw"):
         self.ttss = tts
         self.asr = asr
         self.target_asr = asr
@@ -48,6 +48,8 @@ class CrossASRmodi:
 
         # Zi Qian added this 23/8
         self.wer_temp = {}
+
+        self.audio_type = audio_type
 
         if seed:
             crossasr.utils.set_seed(seed)
@@ -145,7 +147,7 @@ class CrossASRmodi:
 
         return wers, case
 
-    def casesDeterminer(self, text: str, transcriptions: str):
+    def casesDeterminer(self, text: str, transcriptions: dict):
         # word error rate
         wers = {}
 
@@ -188,7 +190,6 @@ class CrossASRmodi:
         return wers, case
 
     def saveCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
-        print(case_dir, tts_name, asr_name, filename, case)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         make_dir(case_dir)
         fpath = os.path.join(case_dir, filename + ".txt")
@@ -198,7 +199,6 @@ class CrossASRmodi:
 
     # 23/8 - Zi Qian: save WER (write to second line)
     def saveCaseWER(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
-        print(case_dir, tts_name, asr_name, filename, case)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         make_dir(case_dir)
         fpath = os.path.join(case_dir, filename + ".txt")
@@ -208,7 +208,6 @@ class CrossASRmodi:
         file.close()
 
     def getCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str):
-        print(case_dir, tts_name, asr_name, filename)
         case_dir = os.path.join(case_dir, tts_name, asr_name)
         fpath = os.path.join(case_dir, filename + ".txt")
         file = open(fpath, "r")
@@ -284,6 +283,7 @@ class CrossASRmodi:
         """
         execution_time = 0.
         transcriptions = {}
+        cases_list = []
         for tts in self.ttss:
             directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
             make_dir(directory)
@@ -366,7 +366,7 @@ class CrossASRmodi:
                 #     print()
         cases = self.casesDeterminer(text, transcriptions)
         # ({'casual_wit': 0.0}, {'casual_wit': 0})
-        # cases_list: [({'google_wit': 0.0}, {'google_wit': 2}), ({'casual_wit': 0.0}, {'casual_wit': 0})] 
+        # cases_list: [({'google': 0.0}, {'google': 2}), ({'casual': 0.0}, {'casual': 0})]
         # cases: ({'google_wit': 0.0, 'casual_wit': 0.0}, {'google_wit': 2, 'casual_wit': 2})
        
         # To re-create cases list 
@@ -378,22 +378,21 @@ class CrossASRmodi:
             tuple = (wer_obj, case_obj)
             cases_list.append(tuple)
         #cases_list.append(cases)
-        print('cases list')
-        print(cases_list)
             # for asr_name, case in cases.items():
             #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
-        print(cases) #({'casual_wit': 0.0}, {'casual_wit': 2})
-        for tuple in cases_list:
-            for asr_name, case in tuple[1].items():
-                print(asr_name)
-                print(case)
-                self.saveCase(self.case_dir, asr_name.split("_")[0], asr_name.split("_")[1], filename, str(case))
+         #({'casual_wit': 0.0}, {'casual_wit': 2})
+        # for tuple_case in cases_list:
+        #     print(tuple_case[1].items())
+            # tts_name, case = tuple_case[1]
+            # print(tts_name)
+            # print(case)
+            # self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
 
             # write WER into file
-            for asr_name, case in tuple[0].items():
-                print(asr_name)
-                print(case)
-                self.saveCaseWER(self.case_dir, asr_name.split("_")[0], asr_name.split("_")[1], filename, str(case))
+            # tts_name, wer = tuple_case[0]
+            # print(tts_name)
+            # print(wer)
+            # self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
 
         for tts_name, case in cases[1].items():
             self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
@@ -403,7 +402,7 @@ class CrossASRmodi:
             self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
 
         # print(f"Execution time: {execution_time}")
-        return cases, execution_time
+        return cases_list, execution_time
 
     def processOneIteration(self, curr_texts: [TextModi], processed_texts: [TextModi], cases):
         start_time = time.time()
@@ -425,7 +424,7 @@ class CrossASRmodi:
             # print("================")
             # print(f"{text.getId()}")
             case, exec_time = self.processText(
-                text=text.getText(), filename=f"{text.getId()}", cc_filename=text.getId())
+                text=text.getText(), filename=f"{text.getId()}", cc_dir=os.path.join(CASUAL_DIR, self.audio_type))
             curr_cases.extend(case)
             execution_time += exec_time
             i += 1
@@ -448,7 +447,7 @@ class CrossASRmodi:
         curr_texts = []
         processed_texts = []
         cases = []
-        num_failed_test_cases = []
+        num_false_alarms_test_cases = []
         num_failed_test_cases_per_tts = {}
         num_processed_texts = []
         for tts in self.ttss:
@@ -473,27 +472,37 @@ class CrossASRmodi:
                     remaining_texts.extend(unprocessed_texts)
                 else:
                     remaining_texts = unprocessed_texts
-                print(cases)
-                num_failed_test_cases.append(calculate_cases(cases, mode=FAILED_TEST_CASE))
 
-                num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
-                    cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
+                num_false_alarms_test_cases.append(calculate_cases(cases, mode=FALSE_ALARM_TEST_CASE))
+                # num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
+                #     cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
                 num_processed_texts.append(len(processed_texts))
             else:
                 print("Texts are not enough!")
 
             # shuffle the remaining texts
             np.random.shuffle(remaining_texts)
-
+        tts_avg_wer = {}
+        for tts in self.ttss:
+            total = 0
+            count = 0
+            for tuple_case in cases:
+                key, value = list(tuple_case[0].items())[0]
+                if key == tts.getName():
+                    count += 1
+                    total = total + float(value)
+            if count != 0:
+                tts_avg_wer[tts.getName()] = total / count
         data = {}
-        data["number_of_failed_test_cases_all"] = num_failed_test_cases
-        data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
+        data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
+        # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
         data["number_of_processed_texts"] = num_processed_texts
+        data["average_word_error_rate"] = tts_avg_wer
         with open(self.outputfile_failed_test_case, 'w') as outfile:
             json.dump(data, outfile, indent=2, sort_keys=True)
-
-        if self.target_asr:
-            self.saveFailedTestCases(processed_texts, cases)
+        #
+        # if self.target_asr:
+        #     self.saveFailedTestCases(processed_texts, cases)
 
     def saveFailedTestCases(self, processed_texts, cases):
         failed_test_case_dir = os.path.join(self.output_dir, "failed_test_cases", self.tts.getName(), self.target_asr)
