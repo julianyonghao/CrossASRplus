@@ -18,14 +18,15 @@ from jiwer import wer
 
 
 # from evaluate import load
+from crossasr.textmodi import TextModi
 
 
 class CrossASRmodi:
-    def __init__(self, tts: [TTS], asrs: [ASR], output_dir: "", target_asr=None, recompute=False, num_iteration=5,
+    def __init__(self, tts: [TTS], asr: ASR, output_dir: "", recompute=False, num_iteration=5,
                  time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None):
-        self.tts = tts
-        self.asrs = asrs
-        self.target_asr = target_asr
+        self.ttss = tts
+        self.asr = asr
+        self.target_asr = asr
 
         self.output_dir = output_dir
 
@@ -43,11 +44,9 @@ class CrossASRmodi:
         self.text_batch_size = text_batch_size
         self.estimator = estimator
         self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
-        # self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
-        # #removed this temporarily by Julian 12/08 for testing
 
         # Zi Qian added this 23/8
-        self.wer_temp = {};
+        self.wer_temp = {}
 
         if seed:
             crossasr.utils.set_seed(seed)
@@ -56,21 +55,20 @@ class CrossASRmodi:
 
     def init_directory(self):
         # init directory for save the audio
-        for tts in self.tts:
+        for tts in self.ttss:
             make_dir(os.path.join(self.audio_dir, tts.getName()))
 
         # init directory for save the transcription
-        for asr in self.asrs:
-            for tts in self.tts:
-                make_dir(os.path.join(self.transcription_dir, tts.getName(), asr.getName()))
+        for tts in self.ttss:
+            make_dir(os.path.join(self.transcription_dir, tts.getName(), self.asr.getName()))
 
     def get_outputfile_for_failed_test_case(self):
-        asrs_dir = "_".join([asr.getName() for asr in self.asrs])
-        ttss_dir = "_".join([tts.getName() for tts in self.tts])
+        asr_dir = self.asr.getName()
+        ttss_dir = "_".join([tts.getName() for tts in self.ttss])
         result_dir = os.path.join(self.output_dir,
                                   "result",
                                   ttss_dir,
-                                  asrs_dir,
+                                  asr_dir,
                                   f"num_iteration_{self.num_iteration}",
                                   f"text_batch_size_{self.text_batch_size if self.text_batch_size else 'global'}")
         make_dir(result_dir)
@@ -78,26 +76,27 @@ class CrossASRmodi:
         return os.path.join(result_dir, experiment_name + ".json")
 
     def getTTS(self):
-        return self.tts
+        return self.ttss
 
-    def setTTS(self, tts: TTS):
-        self.tts = tts
-
-    def getASRS(self):
-        return self.asrs
-
-    def addASR(self, asr: ASR):
-        for curr_asr in self.asrs:
-            if asr.getName() == curr_asr.getName():
+    def addTTS(self, tts: TTS):
+        for curr_tts in self.ttss:
+            if tts.getName() == curr_tts.getName():
                 # asr is already on the list of asrs
                 return
-        self.asrs.append(asr)
+        self.ttss.append(tts)
 
-    def removeASR(self, asr_name: str):
-        for i, asr in enumerate(self.asrs):
-            if asr_name == asr.getName():
-                break
-        del self.asrs[i]
+    def getASRS(self):
+        return self.asr
+
+    def addASR(self, asr: ASR):
+        self.asr = asr
+
+    # Julian removed this 08/09 - since only one asr
+    # def removeASR(self, asr_name: str):
+    #     for i, asr in enumerate(self.asrs):
+    #         if asr_name == asr.getName():
+    #             break
+    #     del self.asrs[i]
 
     def getOutputDir(self):
         return self.audio_dir
@@ -171,42 +170,41 @@ class CrossASRmodi:
         file.close()
         return case
 
-    # Julian updated this function 12/08
+    # Julian updated this function 08/09
     # Zi Qian updated this function 23/8
     def printResult(self, text: str, filename: str):
 
         print()
-        print(f"TTS: {[tts.getName() for tts in self.tts]}")
-        print(f"ASRs: {[asr.getName() for asr in self.asrs]}")
+        print(f"TTSs: {[tts.getName() for tts in self.ttss]}")
+        print(f"ASR: {self.asr.getName()}")
         print()
         print(f"Input text: {text}")
         print()
-        for tts in self.tts:
+        for tts in self.ttss:
             print(f"Transcription: {tts.getName()}")
-            for asr in self.asrs:
-                transcription_dir = os.path.join(
-                    self.transcription_dir, tts.getName())
-                transcription = asr.loadTranscription(
-                    transcription_dir=transcription_dir, filename=filename)
-                print(f"\t {asr.getName()}: {preprocess_text(transcription)}")
+            transcription_dir = os.path.join(
+                self.transcription_dir, tts.getName())
+            transcription = self.asr.loadTranscription(
+                transcription_dir=transcription_dir, filename=filename)
+            print(f"\t {self.asr.getName()}: {preprocess_text(transcription)}")
+
+
         print()
-        for tts in self.tts:
+        for tts in self.ttss:
             print(f"Cases: {tts.getName()}")
-            for asr in self.asrs:
-                case = self.getCase(self.case_dir, tts.getName(), asr.getName(), filename)
-                wer = self.getCaseWER(self.case_dir, tts.getName(), asr.getName(), filename)
+            case = self.getCase(self.case_dir, tts.getName(), self.asr.getName(), filename)
+            wer = self.getCaseWER(self.case_dir, tts.getName(), self.asr.getName(), filename)
 
-                if case == FAILED_TEST_CASE:
-                    print(f"\t {asr.getName()}: failed test case")
-                    print(f"\t WER: {wer}")
+            if case == FAILED_TEST_CASE:
+                print(f"\t {self.asr.getName()}: failed test case")
+                print(f"\t WER: {wer}")
 
-                elif case == SUCCESSFUL_TEST_CASE:
-                    print(f"\t {asr.getName()}: successful test case")
-                    print(f"\t WER: {wer}")
-                else:
-                    print(f"\t {asr.getName()}: indeterminable test case")
-                    print(f"\t WER: {wer}")
-
+            elif case == SUCCESSFUL_TEST_CASE:
+                print(f"\t {self.asr.getName()}: successful test case")
+                print(f"\t WER: {wer}")
+            else:
+                print(f"\t {self.asr.getName()}: indeterminable test case")
+                print(f"\t WER: {wer}")
         print()
 
     def printStatistic(self):
@@ -219,8 +217,8 @@ class CrossASRmodi:
         print(f"\tTotal: {data['number_of_failed_test_cases_all'][-1]}")
         print()
 
-    # Julian updated this function 12/08
-    def processText(self, text: str, filename: str, cc_filename: str):
+    # Julian updated this function 08/09
+    def processText(self, text: str, filename: str, cc_dir: str):
         """
         Run CrossASR on a single text
         Description: Given a sentence as input, the program will generate a test case. The program needs some parameters, i.e. a TTS and ASRs used
@@ -230,8 +228,8 @@ class CrossASRmodi:
         :returns execution time:
         """
         execution_time = 0.
-        cases_list = []
-        for tts in self.tts:
+        transcriptions = {}
+        for tts in self.ttss:
             directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
             make_dir(directory)
             time_for_generating_audio_fpath = os.path.join(directory, filename + ".txt")
@@ -245,8 +243,8 @@ class CrossASRmodi:
                     save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
             else:
                 base_dir = os.getcwd()
-                casual_dir = os.path.join(base_dir, "casual_data", cc_filename)
-                wavfile = os.path.join(casual_dir, cc_filename + ".wav")
+                casual_dir = os.path.join(base_dir, cc_dir)
+                wavfile = os.path.join(casual_dir, filename + ".wav")
 
                 audio_fpath = os.path.relpath(wavfile, base_dir)
 
@@ -261,71 +259,67 @@ class CrossASRmodi:
 
             transcription_dir = os.path.join(self.transcription_dir, tts.getName())
 
-            transcriptions = {}
-            for asr in self.asrs:
-                directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
-                make_dir(directory)
-                time_for_recognizing_audio_fpath = os.path.join(directory, filename + ".txt")
+            directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
+            make_dir(directory)
+            time_for_recognizing_audio_fpath = os.path.join(directory, filename + ".txt")
 
-                if self.recompute:
-                    start_time = time.time()
-                    # TODO:
-                    # change recognize audio -> input audio instead of fpath
-                    # audio = asr.loadAudio(audio_fpath=audio_fpath)
-                    # transcription = asr.recognizeAudio(audio=audio)
-                    # asr.saveTranscription(transcription_fpath, transcription)
-                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
-                    asr.setTranscription(transcription)
-                    asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
-                    save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
+            if self.recompute:
+                start_time = time.time()
+                # TODO:
+                # change recognize audio -> input audio instead of fpath
+                # audio = asr.loadAudio(audio_fpath=audio_fpath)
+                # transcription = asr.recognizeAudio(audio=audio)
+                # asr.saveTranscription(transcription_fpath, transcription)
+                transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                self.asr.setTranscription(transcription)
+                self.asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
+                save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
 
-                transcription = asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
-                num_retry = 0
-                while transcription == "" and num_retry < self.max_num_retry:
-                    start_time = time.time()
-                    asr.recognizeAudio(audio_fpath=audio_fpath)
-                    asr.saveTranscription(
-                        transcription_dir=transcription_dir, filename=filename)
-                    save_execution_time(
-                        fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
-                    transcription = asr.loadTranscription(
-                        transcription_dir=transcription_dir, filename=filename)
+            transcription = self.asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
+            num_retry = 0
+            while transcription == "" and num_retry < self.max_num_retry:
+                start_time = time.time()
+                self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                self.asr.saveTranscription(
+                    transcription_dir=transcription_dir, filename=filename)
+                save_execution_time(
+                    fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
+                transcription = self.asr.loadTranscription(
+                    transcription_dir=transcription_dir, filename=filename)
 
-                    if asr.getName() == "wit":
-                        random_number = float(random.randint(9, 47)) / 10.
-                        time.sleep(random_number)
+                if self.asr.getName() == "wit":
+                    random_number = float(random.randint(9, 47)) / 10.
+                    time.sleep(random_number)
 
-                    num_retry += 1
+                num_retry += 1
 
-                transcriptions[tts.getName() + "_" + asr.getName()] = preprocess_text(transcription)
+            transcriptions[tts.getName()] = preprocess_text(transcription)
 
-                ## add execution time for generating audio
-                execution_time += get_execution_time(
-                    fpath=time_for_recognizing_audio_fpath)
+            ## add execution time for generating audio
+            execution_time += get_execution_time(
+                fpath=time_for_recognizing_audio_fpath)
 
-                cases = self.caseDeterminer(text, transcriptions)
-                # print(transcriptions)
-                # print(cases)
-                # if sum(cases.values()) == 0 :
-                #     print(text)
-                #     print(transcriptions["wav2vec2"])
-                #     print(cases)
-                #     print()
-            cases_list.append(cases)
-            # for asr_name, case in cases.items():
-            #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
-            print(cases)
-            for asr_name, case in cases[1].items():
-                self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
+        cases = self.caseDeterminer(text, transcriptions)
+        # print(transcriptions)
+        # print(cases)
+        # if sum(cases.values()) == 0 :
+        #     print(text)
+        #     print(transcriptions["wav2vec2"])
+        #     print(cases)
+        #     print()
 
-            # write WER into file
-            for asr_name, case in cases[0].items():
-                self.saveCaseWER(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
+
+        for tts_name, case in cases[1].items():
+            self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
+
+        # write WER into file
+        for tts_name, case in cases[0].items():
+            self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
 
         # print(f"Execution time: {execution_time}")
-        return cases_list, execution_time
+        return cases, execution_time
 
-    def processOneIteration(self, curr_texts: [Text], processed_texts: [Text], cases):
+    def processOneIteration(self, curr_texts: [TextModi], processed_texts: [TextModi], cases):
         start_time = time.time()
         curr_cases = []
 
@@ -357,7 +351,7 @@ class CrossASRmodi:
         unprocessed_texts = curr_texts[i:]
         return curr_cases, curr_processed_texts, unprocessed_texts
 
-    def processCorpus(self, texts: [Text]):
+    def processCorpus(self, texts: [TextModi]):
         """
         Run CrossASR on a corpus
         given a corpus, which is a list of sentences, the CrossASR generates test cases.
@@ -369,10 +363,10 @@ class CrossASRmodi:
         processed_texts = []
         cases = []
         num_failed_test_cases = []
-        num_failed_test_cases_per_asr = {}
+        num_failed_test_cases_per_tts = {}
         num_processed_texts = []
-        for asr in self.asrs:
-            num_failed_test_cases_per_asr[asr.getName()] = []
+        for tts in self.ttss:
+            num_failed_test_cases_per_tts[tts.getName()] = []
 
         for i in range(self.num_iteration):
             # print(f"Iteration: {i+1}")
@@ -395,9 +389,9 @@ class CrossASRmodi:
                     remaining_texts = unprocessed_texts
                 print(cases)
                 num_failed_test_cases.append(calculate_cases(cases, mode=FAILED_TEST_CASE))
-                for asr in self.asrs:
-                    num_failed_test_cases_per_asr[asr.getName()].append(calculate_cases_per_asr(
-                        cases, mode=FAILED_TEST_CASE, asr_name=asr.getName()))
+
+                num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
+                    cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
                 num_processed_texts.append(len(processed_texts))
             else:
                 print("Texts are not enough!")
@@ -407,7 +401,7 @@ class CrossASRmodi:
 
         data = {}
         data["number_of_failed_test_cases_all"] = num_failed_test_cases
-        data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_asr
+        data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
         data["number_of_processed_texts"] = num_processed_texts
         with open(self.outputfile_failed_test_case, 'w') as outfile:
             json.dump(data, outfile, indent=2, sort_keys=True)

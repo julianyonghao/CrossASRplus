@@ -106,10 +106,10 @@ def readCorpus(corpus_fpath: str) :
 def readDirAsCorpus(corpus_fpath: str) :
     texts = []
     for subdir, dirs, files in os.walk(corpus_fpath):
-        for dir in dirs:
-            file = open(os.path.join(corpus_fpath, dir, dir + ".txt"))
+        for file in files:
+            file = open(os.path.join(corpus_fpath, file))
             text = file.readlines()
-            texts.append(TextModi(dir, text[0]))
+            texts.append(TextModi(str(file).split(".")[0], text[0]))
     return texts
     
 def parseConfig(config):

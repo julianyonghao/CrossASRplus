@@ -12,14 +12,14 @@ if __name__ == "__main__":
     config = utils.readJson(sys.argv[1]) # read json configuration file
 
     tts = utils.getTTSS(config["tts"])
-    asrs = utils.getASRS(config["asrs"])
+    asr = utils.getASR(config["asrs"])
     estimator = utils.getEstimator(config["estimator"])
+    cc_audio_type = "audio_raw"
 
-    crossasr = CrossASRmodi(tts=tts, asrs=asrs, estimator=estimator, **utils.parseConfig(config))
-    #
-    # corpus_fpath = os.path.join(config["output_dir"], config["corpus_fpath"])
-    texts = utils.readDirAsCorpus(corpus_fpath=config["corpus_fpath"])
-    # print(texts[0].getText())
+    crossasr = CrossASRmodi(tts=tts, asr=asr, estimator=estimator, **utils.parseConfig(config))
+
+    corpus_fpath = os.path.join(config["corpus_fpath"], "transcription")
+    texts = utils.readDirAsCorpus(corpus_fpath=corpus_fpath)
     crossasr.processCorpus(texts=texts)
     # crossasr.printStatistic()
 

@@ -3,7 +3,7 @@
     "output_dir": "output/casual_corpus_test/",
     "corpus_fpath": "casual_data",
     "tts" : ["casual","google"],
-    "asrs" : ["nemo","deepspeech"],
+    "asrs" : "nemo",
     "recompute": true,
     "time_budget": 3600,
     "num_iteration": 5,
