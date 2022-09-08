@@ -10,7 +10,8 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 
 import soundfile as sf
 import torch
-
+import requests
+import time
 
 from gtts import gTTS
 
@@ -241,6 +242,45 @@ def nemoRecognizeAudio(audio_fpath):
     # asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_citrinet_512")
     transcription = asr_model.transcribe([audio_fpath])
     return transcription[0]
+
+# 7/9 - ziqian added a new asr (AssemblyAI)
+def assembly_read_file(audio_fpath, chunk_size=5242880):
+    with open(audio_fpath, 'rb') as _file:
+        while True:
+            data = _file.read(chunk_size)
+            if not data:
+                break
+            yield data
+
+def assemblyRecognizeAudio(audio_fpath):
+    headers = {'authorization': "e7226feceb5646c0b0c173929f2e3012"}
+    response = requests.post('https://api.assemblyai.com/v2/upload',headers=headers,data=assembly_read_file(audio_fpath))
+
+    temp = response.json().get("upload_url")
+    endpoint = "https://api.assemblyai.com/v2/transcript"
+    json = {"audio_url": str(temp)}
+    headers = {
+        "authorization": "e7226feceb5646c0b0c173929f2e3012",
+        "content-type": "application/json"
+    }
+    response = requests.post(endpoint, json=json, headers=headers)
+    print("......")
+    print(response.json())
+
+    status = response.json().get("status")
+    # retrieve results
+    while status != "completed":
+        time.sleep(10)
+        transcription_id = response.json().get("id")
+        endpoint = "https://api.assemblyai.com/v2/transcript/" + str(transcription_id)
+        headers = {
+            "authorization": "e7226feceb5646c0b0c173929f2e3012",
+        }
+        response = requests.get(endpoint, headers=headers)
+        status = response.json().get("status")
+
+    print(response.json())
+
 
 def create_huggingface_estimator_by_name(name: str):
     # https://huggingface.co/transformers/custom_datasets.html
