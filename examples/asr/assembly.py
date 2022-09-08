@@ -7,6 +7,6 @@ class Assembly(ASR):
 
     def recognizeAudio(self, audio_fpath: str) -> str:
         #utils.assemblyRecognizeAudio(audio_fpath)
-        transcription = utils.deepspeechRecognizeAudio(audio_fpath)
+        transcription = utils.assemblyRecognizeAudio(audio_fpath)
         return transcription
 

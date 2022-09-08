@@ -264,8 +264,6 @@ def assemblyRecognizeAudio(audio_fpath):
         "content-type": "application/json"
     }
     response = requests.post(endpoint, json=json, headers=headers)
-    print("......")
-    print(response.json())
 
     status = response.json().get("status")
     # retrieve results
@@ -279,7 +277,9 @@ def assemblyRecognizeAudio(audio_fpath):
         response = requests.get(endpoint, headers=headers)
         status = response.json().get("status")
 
-    print(response.json())
+    print("..............output text hereeeee")
+    print(response.json().get("text"))
+    return response.json().get("text")
 
 
 def create_huggingface_estimator_by_name(name: str):
