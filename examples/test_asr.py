@@ -15,11 +15,14 @@ if __name__ == "__main__":
     asrs = utils.getASRS(config["asrs"])
     estimator = utils.getEstimator(config["estimator"])
 
+    # Initialize CrossASR class with parameters listed config_corpus.json
     crossasr = CrossASRmodi(tts=tts, asrs=asrs, estimator=estimator, **utils.parseConfig(config))
-    #
-    # corpus_fpath = os.path.join(config["output_dir"], config["corpus_fpath"])
+
+    # Read path to corpus
     texts = utils.readDirAsCorpus(corpus_fpath=config["corpus_fpath"])
     # print(texts[0].getText())
+
+    # Process corpus as test cases
     crossasr.processCorpus(texts=texts)
     # crossasr.printStatistic()
 

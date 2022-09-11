@@ -18,6 +18,7 @@ def set_seed(seed: int):
     torch.backends.cudnn.deterministic = True
 
 
+# create directory if it does not exist
 def make_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -78,12 +79,12 @@ def substitute_word(text):
 def preprocess_text(text):
     text = remove_hex(text)
     text = remove_punctuation(text)
-    try:  
-        # NOTE: it seems that the normalisation
-        #       process is not deterministic
-        text = normalize_text(text)
-    except :
-        text = ""
+    # try:  
+    #     # NOTE: it seems that the normalisation
+    #     #       process is not deterministic
+    #     text = normalize_text(text)
+    # except :
+    #     text = ""
     # need to remove punctuation again as normalise sometimes add punctuation
     text = remove_punctuation(text)
     text = text.lower()

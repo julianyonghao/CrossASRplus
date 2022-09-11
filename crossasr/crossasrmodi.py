@@ -1,4 +1,6 @@
+from opcode import HAVE_ARGUMENT
 import os, time, random
+from warnings import catch_warnings
 import numpy as np
 import json
 
@@ -43,11 +45,10 @@ class CrossASRmodi:
         self.text_batch_size = text_batch_size
         self.estimator = estimator
         self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
-        # self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
-        # #removed this temporarily by Julian 12/08 for testing
 
         # Zi Qian added this 23/8
-        self.wer_temp = {};
+        self.wer_temp = {}
+        self.total_wer = {}
 
         if seed:
             crossasr.utils.set_seed(seed)
@@ -312,9 +313,9 @@ class CrossASRmodi:
                 #     print(cases)
                 #     print()
             cases_list.append(cases)
+            
             # for asr_name, case in cases.items():
             #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
-            print(cases)
             for asr_name, case in cases[1].items():
                 self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
 
@@ -329,6 +330,7 @@ class CrossASRmodi:
         start_time = time.time()
         curr_cases = []
 
+        # Trains the estimator to predict text cases and ranks them
         if self.estimator and len(processed_texts) > 0:
             labels = get_labels_from_cases(cases)
             self.trainEstimator(processed_texts, labels)
@@ -338,21 +340,33 @@ class CrossASRmodi:
             # end_time_classifier = time.time()
             # print({f"Time for prediciton: {end_time_classifier-start_time_classifier}s"})
 
+        # Process for each test cases
         execution_time = 0.
-
         i = 0
         for text in curr_texts:
             # print("================")
             # print(f"{text.getId()}")
             case, exec_time = self.processText(
                 text=text.getText(), filename=f"{text.getId()}", cc_filename=text.getId())
+            
+            # calculate total wer
+            for i in range(len(case)):
+                wer = case[i][0]
+                for key in wer.keys():
+                    try:
+                        self.total_wer[key] += wer[key]
+                    except KeyError:
+                        self.total_wer[key] = wer[key]
+
             curr_cases.extend(case)
             execution_time += exec_time
             i += 1
+
+            # Break if execution time exceeds time budget
             if execution_time + time.time() - start_time > self.time_budget:
                 # print(f"Number of processed texts {i}")
                 break
-
+        
         curr_processed_texts = curr_texts[:i]
         unprocessed_texts = curr_texts[i:]
         return curr_cases, curr_processed_texts, unprocessed_texts
@@ -384,31 +398,37 @@ class CrossASRmodi:
                 curr_texts = remaining_texts
 
             if len(curr_texts) > 0:
-
                 curr_cases, curr_processsed_texts, unprocessed_texts = self.processOneIteration(curr_texts,
                                                                                                 processed_texts, cases)
                 cases.extend(curr_cases)
+
                 processed_texts.extend(curr_processsed_texts)
                 if self.text_batch_size:
                     remaining_texts.extend(unprocessed_texts)
                 else:
                     remaining_texts = unprocessed_texts
-                print(cases)
                 num_failed_test_cases.append(calculate_cases(cases, mode=FAILED_TEST_CASE))
                 for asr in self.asrs:
                     num_failed_test_cases_per_asr[asr.getName()].append(calculate_cases_per_asr(
                         cases, mode=FAILED_TEST_CASE, asr_name=asr.getName()))
                 num_processed_texts.append(len(processed_texts))
+
             else:
                 print("Texts are not enough!")
 
             # shuffle the remaining texts
             np.random.shuffle(remaining_texts)
 
+        # write result to json format
         data = {}
         data["number_of_failed_test_cases_all"] = num_failed_test_cases
         data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_asr
         data["number_of_processed_texts"] = num_processed_texts
+        for key in self.total_wer.keys():
+            self.total_wer[key] /= (len(texts))
+        data["average_wer"] = self.total_wer
+
+
         with open(self.outputfile_failed_test_case, 'w') as outfile:
             json.dump(data, outfile, indent=2, sort_keys=True)
 
