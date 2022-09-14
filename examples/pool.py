@@ -10,6 +10,7 @@ from asr.wav2letter import Wav2Letter
 from asr.wav2vec2 import Wav2Vec2
 from asr.wit import Wit
 from asr.nemo import Nemo
+from asr.assembly import Assembly
 
 tts_pool = [Google(), Espeak(), Festival(), ResponsiveVoice(), Casual()]
-asr_pool = [Wav2Vec2(), DeepSpeech(), DeepSpeech2(), Wav2Letter(), Wit(), Nemo()]
+asr_pool = [Wav2Vec2(), DeepSpeech(), DeepSpeech2(), Wav2Letter(), Wit(), Nemo(), Assembly()]
