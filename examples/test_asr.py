@@ -15,6 +15,9 @@ if __name__ == "__main__":
     asr = utils.getASR(config["asrs"])
     estimator = utils.getEstimator(config["estimator"])
 
+    # file = open(os.path.join("/mnt/f/casual_data/Casual_Data_LJ/transcription/", "LJ001-0001.txt"))
+    # text = file.readlines()
+    # print(text)
     crossasr = CrossASRmodi(tts=tts, asr=asr, estimator=estimator, **utils.parseConfig(config))
 
     corpus_fpath = os.path.join(config["corpus_fpath"], "transcription")

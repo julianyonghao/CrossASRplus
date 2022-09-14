@@ -106,16 +106,24 @@ def readCorpus(corpus_fpath: str) :
 def readDirAsCorpus(corpus_fpath: str) :
     texts = []
     for subdir, dirs, files in os.walk(corpus_fpath):
+        i = 0
         for ori_file in files:
-            file = open(os.path.join(corpus_fpath, ori_file))
-            text = file.readlines()
-            texts.append(TextModi(ori_file.split(".")[0], text[0]))
+            if i == 100:
+                break
+            print(os.path.join(corpus_fpath, ori_file))
+            try:
+                file = open(os.path.join(corpus_fpath, ori_file))
+                text = file.readlines()
+                texts.append(TextModi(ori_file.split(".")[0], text[0]))
+                i+=1
+            except:
+                continue
     return texts
     
 def parseConfig(config):
     conf = {}
     for k,v in config.items() :
-        if k != "tts" and k!= "asrs" and k != "corpus_fpath" and k != "estimator":
+        if k != "tts" and k!= "asrs" and k != "estimator":
             conf[k] = v
     return conf
 

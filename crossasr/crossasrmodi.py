@@ -24,12 +24,13 @@ from crossasr.textmodi import TextModi
 
 class CrossASRmodi:
     def __init__(self, tts: [TTS], asr: ASR, output_dir: "", recompute=False, num_iteration=5,
-                 time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None, audio_type="audio_raw"):
+                 time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None, audio_type="audio_raw", corpus_fpath=None):
         self.ttss = tts
         self.asr = asr
         self.target_asr = asr
 
         self.output_dir = output_dir
+        self.casual_dir = corpus_fpath
 
         self.audio_dir = os.path.join(output_dir, DATA_DIR, AUDIO_DIR)
         self.transcription_dir = os.path.join(output_dir, DATA_DIR, TRANSCRIPTION_DIR)
@@ -408,14 +409,14 @@ class CrossASRmodi:
         start_time = time.time()
         curr_cases = []
 
-        if self.estimator and len(processed_texts) > 0:
-            labels = get_labels_from_cases(cases)
-            self.trainEstimator(processed_texts, labels)
-            # print(f"Length texts: {len(curr_texts)}")
-            # start_time_classifier = time.time()
-            curr_texts = self.rank(curr_texts)
-            # end_time_classifier = time.time()
-            # print({f"Time for prediciton: {end_time_classifier-start_time_classifier}s"})
+        # if self.estimator and len(processed_texts) > 0:
+        #     labels = get_labels_from_cases(cases)
+        #     self.trainEstimator(processed_texts, labels)
+        #     # print(f"Length texts: {len(curr_texts)}")
+        #     # start_time_classifier = time.time()
+        #     curr_texts = self.rank(curr_texts)
+        #     # end_time_classifier = time.time()
+        #     # print({f"Time for prediciton: {end_time_classifier-start_time_classifier}s"})
 
         execution_time = 0.
 
@@ -424,7 +425,7 @@ class CrossASRmodi:
             # print("================")
             # print(f"{text.getId()}")
             case, exec_time = self.processText(
-                text=text.getText(), filename=f"{text.getId()}", cc_dir=os.path.join(CASUAL_DIR, self.audio_type))
+                text=text.getText(), filename=f"{text.getId()}", cc_dir=os.path.join(self.casual_dir, self.audio_type))
             curr_cases.extend(case)
             execution_time += exec_time
             i += 1

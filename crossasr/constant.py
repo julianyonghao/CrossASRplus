@@ -12,4 +12,4 @@ CASE_DIR = "case/"
 AUDIO_DIR = "audio/"
 TRANSCRIPTION_DIR = "transcription/"
 
-CASUAL_DIR = "casual_data/"
+CASUAL_DIR = "/mnt/f/casual_data/Casual_Data_LJ/"
