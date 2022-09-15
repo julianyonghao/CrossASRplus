@@ -284,9 +284,6 @@ def assemblyRecognizeAudio(audio_fpath):
         }
         response = requests.get(endpoint, headers=headers)
         status = response.json().get("status")
-
-    print("..............output text hereeeee")
-    print(response.json().get("text"))
     return response.json().get("text")
 
 
