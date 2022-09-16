@@ -1,12 +1,12 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_wav2vec2_test/",
-    "corpus_fpath": "/mnt/f/casual_data/Casual_Data_LJ/",
+    "output_dir": "output/casual_lj_deepspeech2_test/",
+    "corpus_fpath": "../casual_data/Casual_Data_LJ/",
     "tts" : ["casual","google"],
-    "asrs" : "wav2vec2",
+    "asrs" : "deepspeech2",
     "recompute": true,
     "time_budget": 3600,
-    "num_iteration": 5,
+    "num_iteration": 1,
     "text_batch_size": 20,
     "estimator": "facebook/bart-base",
     "audio_type": "audio"
