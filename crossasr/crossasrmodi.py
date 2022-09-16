@@ -429,13 +429,36 @@ class CrossASRmodi:
             curr_cases.extend(case)
             execution_time += exec_time
             i += 1
+
             if execution_time + time.time() - start_time > self.time_budget:
                 # print(f"Number of processed texts {i}")
                 break
 
         curr_processed_texts = curr_texts[:i]
         unprocessed_texts = curr_texts[i:]
+        # save to file and print result for one iteration
         return curr_cases, curr_processed_texts, unprocessed_texts
+
+    def writeResult(self, cases, num_false_alarms_test_cases, num_processed_texts):
+        tts_avg_wer = {}
+        for tts in self.ttss:
+            total = 0
+            count = 0
+            for tuple_case in cases:
+                key, value = list(tuple_case[0].items())[0]
+                if key == tts.getName():
+                    count += 1
+                    total = total + float(value)
+            if count != 0:
+                tts_avg_wer[tts.getName()] = total / count
+
+        data = {}
+        data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
+        # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
+        data["number_of_processed_texts"] = num_processed_texts
+        data["average_word_error_rate"] = tts_avg_wer
+        with open(self.outputfile_failed_test_case, 'w') as outfile:
+            json.dump(data, outfile, indent=2, sort_keys=True)
 
     def processCorpus(self, texts: [TextModi]):
         """
@@ -456,15 +479,14 @@ class CrossASRmodi:
 
         for i in range(self.num_iteration):
             # print(f"Iteration: {i+1}")
-
             if self.text_batch_size:
                 curr_texts = remaining_texts[:self.text_batch_size]
                 remaining_texts = remaining_texts[self.text_batch_size:]
+
             else:  # use global visibility
                 curr_texts = remaining_texts
 
             if len(curr_texts) > 0:
-
                 curr_cases, curr_processsed_texts, unprocessed_texts = self.processOneIteration(curr_texts,
                                                                                                 processed_texts, cases)
                 cases.extend(curr_cases)
@@ -478,30 +500,15 @@ class CrossASRmodi:
                 # num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
                 #     cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
                 num_processed_texts.append(len(processed_texts))
+                self.writeResult(cases, num_false_alarms_test_cases, num_processed_texts)
+
             else:
                 print("Texts are not enough!")
 
             # shuffle the remaining texts
             np.random.shuffle(remaining_texts)
-        tts_avg_wer = {}
-        for tts in self.ttss:
-            total = 0
-            count = 0
-            for tuple_case in cases:
-                key, value = list(tuple_case[0].items())[0]
-                if key == tts.getName():
-                    count += 1
-                    total = total + float(value)
-            if count != 0:
-                tts_avg_wer[tts.getName()] = total / count
-        data = {}
-        data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
-        # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
-        data["number_of_processed_texts"] = num_processed_texts
-        data["average_word_error_rate"] = tts_avg_wer
-        with open(self.outputfile_failed_test_case, 'w') as outfile:
-            json.dump(data, outfile, indent=2, sort_keys=True)
-        #
+        
+
         # if self.target_asr:
         #     self.saveFailedTestCases(processed_texts, cases)
 

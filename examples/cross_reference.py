@@ -16,14 +16,15 @@ if __name__ == "__main__":
 
     tts = utils.getTTSS(config["tts"])
     asr = utils.getASR(config["asr"])
-    cc_audio_type = config["audio_type"]
+    # cc_audio_type = ""
     
     crossasr = CrossASRmodi(tts=tts, asr=asr, output_dir=config["output_dir"], recompute=True)
 
-    cc_filename = "1140_00"
+    cc_filename = "LJ001-0001"
 
-    casual_dir = os.path.join(CASUAL_DIR, cc_audio_type)
-    fpath = os.path.join(CASUAL_DIR, "transcription", cc_filename + ".txt")
+    # casual_dir = os.path.join(CASUAL_DIR, cc_audio_type)
+    casual_dir = os.path.join(CASUAL_DIR, cc_filename)
+    fpath = os.path.join(casual_dir, cc_filename + ".txt")
     file = open(fpath, "r")
     text = file.readlines()[0]
     file.close()

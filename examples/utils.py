@@ -107,16 +107,11 @@ def readCorpus(corpus_fpath: str) :
 def readDirAsCorpus(corpus_fpath: str) :
     texts = []
     for subdir, dirs, files in os.walk(corpus_fpath):
-        i = 0
         for ori_file in files:
-            if i == 100:
-                break
-            print(os.path.join(corpus_fpath, ori_file))
             try:
                 file = open(os.path.join(corpus_fpath, ori_file))
                 text = file.readlines()
                 texts.append(TextModi(ori_file.split(".")[0], text[0]))
-                i+=1
             except:
                 continue
     return texts
@@ -261,14 +256,14 @@ def assembly_read_file(audio_fpath, chunk_size=5242880):
             yield data
 
 def assemblyRecognizeAudio(audio_fpath):
-    headers = {'authorization': "e7226feceb5646c0b0c173929f2e3012"}
+    headers = {'authorization': "b66e701008d14dc18845619b5cdf4ba1"}
     response = requests.post('https://api.assemblyai.com/v2/upload',headers=headers,data=assembly_read_file(audio_fpath))
 
     temp = response.json().get("upload_url")
     endpoint = "https://api.assemblyai.com/v2/transcript"
     json = {"audio_url": str(temp)}
     headers = {
-        "authorization": "e7226feceb5646c0b0c173929f2e3012",
+        "authorization": "b66e701008d14dc18845619b5cdf4ba1",
         "content-type": "application/json"
     }
     response = requests.post(endpoint, json=json, headers=headers)
@@ -280,13 +275,10 @@ def assemblyRecognizeAudio(audio_fpath):
         transcription_id = response.json().get("id")
         endpoint = "https://api.assemblyai.com/v2/transcript/" + str(transcription_id)
         headers = {
-            "authorization": "e7226feceb5646c0b0c173929f2e3012",
+            "authorization": "b66e701008d14dc18845619b5cdf4ba1",
         }
         response = requests.get(endpoint, headers=headers)
         status = response.json().get("status")
-
-    print("..............output text hereeeee")
-    print(response.json().get("text"))
     return response.json().get("text")
 
 
