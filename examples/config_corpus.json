@@ -1,13 +1,13 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_deepspeech2_test/",
-    "corpus_fpath": "../casual_data/Casual_Data_LJ/",
+    "output_dir": "output/casual_lj_assembly_test/",
+    "corpus_fpath": "casual_data/Casual_Data_LJ/",
     "tts" : ["casual","google"],
-    "asrs" : "deepspeech2",
+    "asrs" : "assembly",
     "recompute": true,
-    "time_budget": 3600,
-    "num_iteration": 1,
-    "text_batch_size": 20,
+    "time_budget": 42069,
+    "num_iteration": 5,
+    "text_batch_size": 2,
     "estimator": "facebook/bart-base",
     "audio_type": "audio"
 }
