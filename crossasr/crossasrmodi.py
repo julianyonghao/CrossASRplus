@@ -16,7 +16,7 @@ from crossasr.tts import TTS
 from crossasr.asr import ASR
 
 from jiwer import wer
-
+import xlsxwriter
 
 # from evaluate import load
 from crossasr.textmodi import TextModi
@@ -46,6 +46,7 @@ class CrossASRmodi:
         self.text_batch_size = text_batch_size
         self.estimator = estimator
         self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
+        self.outputfile_false_alarms = self.get_outputfile_for_false_alarms()
 
         # Zi Qian added this 23/8
         self.wer_temp = {}
@@ -78,6 +79,20 @@ class CrossASRmodi:
         make_dir(result_dir)
         experiment_name = f"with-estimator-{self.estimator.getName().replace('/', '-')}" if self.estimator else "without-estimator"
         return os.path.join(result_dir, experiment_name + ".json")
+    
+    def get_outputfile_for_false_alarms(self):
+        asr_dir = self.asr.getName()
+        ttss_dir = "_".join([tts.getName() for tts in self.ttss])
+        result_dir = os.path.join(self.output_dir,
+                                  "result",
+                                  ttss_dir,
+                                  asr_dir,
+                                  f"num_iteration_{self.num_iteration}",
+                                  f"text_batch_size_{self.text_batch_size if self.text_batch_size else 'global'}")
+        make_dir(result_dir)
+        experiment_name = f"false_alarms"
+        print(os.path.join(result_dir, experiment_name + ".xlsx"))
+        return os.path.join(result_dir, experiment_name + ".xlsx")
 
     def getTTS(self):
         return self.ttss
@@ -151,6 +166,7 @@ class CrossASRmodi:
     def casesDeterminer(self, text: str, transcriptions: dict):
         # word error rate
         wers = {}
+        false_alarm_transcriptions = {}
 
         is_determinable = False
 
@@ -159,8 +175,11 @@ class CrossASRmodi:
         print(transcriptions)
         # {
         # 'google_wit': 'is technology making our attention span shorter', 
+        # 'festival_wit': '',
         # 'casual_wit': 'is technology making our attention span shorter'
         # }
+
+        # {'original': 'original transcription', 'casual_wit': '', 'festival_wit': '', 'google_wit': ''}
 
         for k, transcription in transcriptions.items():
             word_error_rate = wer(text, transcription)
@@ -172,11 +191,13 @@ class CrossASRmodi:
                     is_false_alarm = True
 
         case = {}
-        if is_determinable and  is_false_alarm:
+        if is_determinable and is_false_alarm:
             for k in transcriptions.keys():
                 if wers[k] == 0:
                     case[k] = SUCCESSFUL_TEST_CASE
                 else:
+                    false_alarm_transcriptions['original'] = text
+                    false_alarm_transcriptions[k] = transcriptions[k]
                     case[k] = FALSE_ALARM_TEST_CASE
         elif is_determinable and not is_false_alarm:
             for k in transcriptions.keys():
@@ -188,7 +209,7 @@ class CrossASRmodi:
             for k in transcriptions.keys():
                 case[k] = INDETERMINABLE_TEST_CASE
 
-        return wers, case
+        return wers, case, false_alarm_transcriptions
 
     def saveCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
         case_dir = os.path.join(case_dir, tts_name, asr_name)
@@ -302,8 +323,13 @@ class CrossASRmodi:
                 casual_dir = os.path.join(base_dir, cc_dir)
                 wavfile = os.path.join(casual_dir, filename + ".wav")
 
-                audio_fpath = os.path.relpath(wavfile, base_dir)
+                if self.asr.getName() != "wav2letter":
+                    audio_fpath = os.path.relpath(wavfile, base_dir)
+                else:
+                    audio_fpath = wavfile
+                    print(audio_fpath)
 
+        
                 if self.recompute or not os.path.exists(audio_fpath):
                     # print(audio_fpath)
                     start_time = time.time()
@@ -378,22 +404,6 @@ class CrossASRmodi:
             case_obj[k] = cases[1][k]
             tuple = (wer_obj, case_obj)
             cases_list.append(tuple)
-        #cases_list.append(cases)
-            # for asr_name, case in cases.items():
-            #     self.saveCase(self.case_dir, tts.getName(), asr_name.split("_")[1], filename, str(case))
-         #({'casual_wit': 0.0}, {'casual_wit': 2})
-        # for tuple_case in cases_list:
-        #     print(tuple_case[1].items())
-            # tts_name, case = tuple_case[1]
-            # print(tts_name)
-            # print(case)
-            # self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
-
-            # write WER into file
-            # tts_name, wer = tuple_case[0]
-            # print(tts_name)
-            # print(wer)
-            # self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
 
         for tts_name, case in cases[1].items():
             self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
@@ -401,13 +411,19 @@ class CrossASRmodi:
         # write WER into file
         for tts_name, case in cases[0].items():
             self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
+        
+        if cases[2]:
+            cases[2]['filename'] = filename
+            print('cases_filename') 
+            print(cases)
 
         # print(f"Execution time: {execution_time}")
-        return cases_list, execution_time
+        return cases_list, execution_time, cases[2]
 
     def processOneIteration(self, curr_texts: [TextModi], processed_texts: [TextModi], cases):
         start_time = time.time()
         curr_cases = []
+        false_alarms = []
 
         # if self.estimator and len(processed_texts) > 0:
         #     labels = get_labels_from_cases(cases)
@@ -424,8 +440,10 @@ class CrossASRmodi:
         for text in curr_texts:
             # print("================")
             # print(f"{text.getId()}")
-            case, exec_time = self.processText(
+            case, exec_time, false_alarm_transcription_obj = self.processText(
                 text=text.getText(), filename=f"{text.getId()}", cc_dir=os.path.join(self.casual_dir, self.audio_type))
+            if false_alarm_transcription_obj:
+                false_alarms.append(false_alarm_transcription_obj)
             curr_cases.extend(case)
             execution_time += exec_time
             i += 1
@@ -436,8 +454,9 @@ class CrossASRmodi:
 
         curr_processed_texts = curr_texts[:i]
         unprocessed_texts = curr_texts[i:]
-        # save to file and print result for one iteration
-        return curr_cases, curr_processed_texts, unprocessed_texts
+        print('===========')
+        print(false_alarms)
+        return curr_cases, curr_processed_texts, unprocessed_texts, false_alarms
 
     def writeResult(self, cases, num_false_alarms_test_cases, num_processed_texts):
         tts_avg_wer = {}
@@ -474,8 +493,26 @@ class CrossASRmodi:
         num_false_alarms_test_cases = []
         num_failed_test_cases_per_tts = {}
         num_processed_texts = []
+        false_alarms = []
+
+
+        workbook = xlsxwriter.Workbook(self.outputfile_false_alarms)
+        worksheet = workbook.add_worksheet()
+
+        worksheet.write(0,0,"filename")
+        worksheet.write(0,1,"original")
+        
+        row = 1
+        col = 2
+        tts_col_obj = {}
+        # Save which tts is which column 
         for tts in self.ttss:
-            num_failed_test_cases_per_tts[tts.getName()] = []
+            if tts.getName() != "casual":
+                worksheet.write(0,col,tts.getName())
+                tts_col_obj[tts.getName()] = col
+                col += 1
+                num_failed_test_cases_per_tts[tts.getName()] = []
+    
 
         for i in range(self.num_iteration):
             # print(f"Iteration: {i+1}")
@@ -487,8 +524,20 @@ class CrossASRmodi:
                 curr_texts = remaining_texts
 
             if len(curr_texts) > 0:
-                curr_cases, curr_processsed_texts, unprocessed_texts = self.processOneIteration(curr_texts,
+
+                curr_cases, curr_processsed_texts, unprocessed_texts, false_alarm_arr = self.processOneIteration(curr_texts,
                                                                                                 processed_texts, cases)
+                for obj in false_alarm_arr:
+                    # false_alarms.append(obj)
+                    for key in obj.keys():
+                        if key == 'filename':
+                            worksheet.write(row,0,obj[key])
+                        elif key == 'original':
+                            worksheet.write(row,1,obj[key])
+                        else:
+                            worksheet.write(row, tts_col_obj[key], obj[key])
+                    row += 1
+                    
                 cases.extend(curr_cases)
                 processed_texts.extend(curr_processsed_texts)
                 if self.text_batch_size:
@@ -507,8 +556,27 @@ class CrossASRmodi:
 
             # shuffle the remaining texts
             np.random.shuffle(remaining_texts)
-        
-
+        tts_avg_wer = {}
+        for tts in self.ttss:
+            total = 0
+            count = 0
+            for tuple_case in cases:
+                key, value = list(tuple_case[0].items())[0]
+                if key == tts.getName():
+                    count += 1
+                    total = total + float(value)
+            if count != 0:
+                tts_avg_wer[tts.getName()] = total / count
+        data = {}
+        data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
+        # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
+        data["number_of_processed_texts"] = num_processed_texts
+        data["average_word_error_rate"] = tts_avg_wer
+        data["false_alarm_cases"] = false_alarms
+        with open(self.outputfile_failed_test_case, 'w') as outfile:
+            json.dump(data, outfile, indent=2, sort_keys=True)
+        workbook.close()
+        #
         # if self.target_asr:
         #     self.saveFailedTestCases(processed_texts, cases)
 
