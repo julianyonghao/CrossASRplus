@@ -6,16 +6,15 @@ import gc
 import torch
 import soundfile as sf
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
-
-
-import soundfile as sf
 import torch
 import requests
 import time
+from wit import Wit as WitAPI
+import nemo.collections.asr as nemo_asr
+
+from pool import asr_pool, tts_pool
 
 from gtts import gTTS
-
-from crossasr.textmodi import TextModi
 from tts.rv import ResponsiveVoice
 from tts.google import Google
 from tts.espeak import Espeak
@@ -27,17 +26,13 @@ from asr.wav2letter import Wav2Letter
 from asr.wit import Wit
 from asr.wav2vec2 import Wav2Vec2
 
+from crossasr.text import Text
+from crossasr.textmodi import TextModi
+
 from estimator.huggingface import HuggingFaceTransformer
 
-from pool import asr_pool, tts_pool
-from crossasr.text import Text
-
-from wit import Wit as WitAPI
-
-import nemo.collections.asr as nemo_asr
 
 WIT_ACCESS_TOKEN = os.getenv("WIT_ACCESS_TOKEN")
-wit_client = WitAPI("CNNRVCTEC667JGLJGFYHR2PL67HBNUQD")
 
 tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
@@ -223,8 +218,10 @@ def wav2vec2RecognizeAudio(audio_fpath) :
 
     return transcription
 
-def witRecognizeAudio(audio_fpath):
+def witRecognizeAudio(audio_fpath, token):
+    wit_client = WitAPI(token)
     transcription = ""
+
     with open(audio_fpath, 'rb') as audio:
         try:
             wit_transcription = wit_client.speech(
@@ -237,7 +234,6 @@ def witRecognizeAudio(audio_fpath):
             # print("Could not request results from Wit.ai service; {0}".format(e))
             transcription = ""
 
-    # print(f"Wit transcription: {transcription}")
     return transcription
 
 def nemoRecognizeAudio(audio_fpath):
@@ -255,15 +251,15 @@ def assembly_read_file(audio_fpath, chunk_size=5242880):
                 break
             yield data
 
-def assemblyRecognizeAudio(audio_fpath):
-    headers = {'authorization': "b66e701008d14dc18845619b5cdf4ba1"}
+def assemblyRecognizeAudio(audio_fpath, token):
+    headers = {'authorization': token}
     response = requests.post('https://api.assemblyai.com/v2/upload',headers=headers,data=assembly_read_file(audio_fpath))
 
     temp = response.json().get("upload_url")
     endpoint = "https://api.assemblyai.com/v2/transcript"
     json = {"audio_url": str(temp)}
     headers = {
-        "authorization": "b66e701008d14dc18845619b5cdf4ba1",
+        "authorization": token,
         "content-type": "application/json"
     }
     response = requests.post(endpoint, json=json, headers=headers)
@@ -275,7 +271,7 @@ def assemblyRecognizeAudio(audio_fpath):
         transcription_id = response.json().get("id")
         endpoint = "https://api.assemblyai.com/v2/transcript/" + str(transcription_id)
         headers = {
-            "authorization": "b66e701008d14dc18845619b5cdf4ba1",
+            "authorization": token,
         }
         response = requests.get(endpoint, headers=headers)
         status = response.json().get("status")

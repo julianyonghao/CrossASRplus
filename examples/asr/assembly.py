@@ -1,4 +1,6 @@
 from crossasr.asr import ASR
+
+from constant import ASSEMBLY_TOKEN
 import utils
 
 class Assembly(ASR):
@@ -6,7 +8,6 @@ class Assembly(ASR):
         ASR.__init__(self, name=name)
 
     def recognizeAudio(self, audio_fpath: str) -> str:
-        #utils.assemblyRecognizeAudio(audio_fpath)
-        transcription = utils.assemblyRecognizeAudio(audio_fpath)
+        transcription = utils.assemblyRecognizeAudio(audio_fpath, ASSEMBLY_TOKEN)
         return transcription
 
