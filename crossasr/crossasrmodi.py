@@ -272,7 +272,7 @@ class CrossASRmodi:
         print(f"\tTotal: {data['number_of_failed_test_cases_all'][-1]}")
         print()
 
-    # Julian updated this function 08/09
+
     def processText(self, text: str, filename: str, cc_dir: str):
         """
         Run CrossASR on a single text
@@ -285,41 +285,41 @@ class CrossASRmodi:
         execution_time = 0.
         transcriptions = {}
         cases_list = []
+
         for tts in self.ttss:
-            directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
-            make_dir(directory)
-            time_for_generating_audio_fpath = os.path.join(directory, filename + ".txt")
+            ### GENERATE/OBTAIN AUDIO FILE FOR ASR
             if tts.getName() != "casual":
+                # create directory to save tts execution time
+                tts_exec_time_dir = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
+                make_dir(tts_exec_time_dir)
+                time_for_generating_audio_fpath = os.path.join(tts_exec_time_dir, filename + ".txt")
+
+                # tts audio output file path (e.g. <output_dir>/data/audio/<TTS>/<wav file>)
                 audio_fpath = tts.getAudioPath(text=text, audio_dir=self.audio_dir, filename=filename)
 
+                # TTS generates audio if audio file was never generated or if you decide to recompute the operation
                 if self.recompute or not os.path.exists(audio_fpath):
-                    # print(audio_fpath)
                     start_time = time.time()
                     tts.generateAudio(text=text, audio_fpath=audio_fpath)
                     save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
-            else:
-                base_dir = os.getcwd()
-                casual_dir = os.path.join(base_dir, cc_dir)
-                wavfile = os.path.join(casual_dir, filename + ".wav")
 
-                audio_fpath = os.path.relpath(wavfile, base_dir)
+                # add execution time for generating audio into process_text execution time
+                execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
 
-                if self.recompute or not os.path.exists(audio_fpath):
-                    # print(audio_fpath)
-                    start_time = time.time()
-                    os.path.relpath(wavfile, base_dir)
-                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
+            else: # human audio (no execution needed)
+                audio_fpath = os.path.join(cc_dir, filename + ".wav")
+                
 
-            # add execution time for generating audio
-            execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
-
+            # create directory to save asr execution time
             transcription_dir = os.path.join(self.transcription_dir, tts.getName())
+            asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
+            make_dir(asr_exec_time_dir)
+            time_for_recognizing_audio_fpath = os.path.join(asr_exec_time_dir, filename + ".txt")
 
-            directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
-            make_dir(directory)
-            time_for_recognizing_audio_fpath = os.path.join(directory, filename + ".txt")
+            # asr audio output file path (e.g. <output_dir>/data/transcription/<TTS>/<ASR>/<txt file>)
+            transcription_fpath = os.path.join(transcription_dir, self.asr.getName(), filename + ".txt")
 
-            if self.recompute:
+            if self.recompute or not os.path.exists(transcription_fpath):
                 start_time = time.time()
                 # TODO:
                 # change recognize audio -> input audio instead of fpath

@@ -1,9 +1,9 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_assembly_test/",
+    "output_dir": "output/test/",
     "corpus_fpath": "casual_data/Casual_Data_LJ/",
     "tts" : ["casual","google"],
-    "asrs" : "assembly",
+    "asrs" : "deepspeech2",
     "recompute": true,
     "time_budget": 42069,
     "num_iteration": 5,
