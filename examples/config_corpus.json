@@ -1,7 +1,7 @@
 {
     "seed": 2021,
     "output_dir": "output/casual_lj_assembly_test/",
-    "corpus_fpath": "casual_data/Casual_Data_LJ/",
+    "corpus_fpath": "/mnt/f/casual_data/Casual_Data_LJ/",
     "tts" : ["casual","google"],
     "asrs" : "assembly",
     "recompute": true,
