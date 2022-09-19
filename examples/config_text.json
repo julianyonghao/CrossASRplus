@@ -1,6 +1,8 @@
 {
     "output_dir": "output/casual_test/",
     "tts" : ["casual", "google"],
-    "asr" : "nemo"
+    "asr" : ["wit", "wav2vec2"],
+    "target_asr": "wit",
+    "audio_type": "audio"
 }
 

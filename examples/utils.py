@@ -114,7 +114,7 @@ def readDirAsCorpus(corpus_fpath: str) :
 def parseConfig(config):
     conf = {}
     for k,v in config.items() :
-        if k != "tts" and k!= "asrs" and k != "estimator":
+        if k != "tts" and k!= "asrs" and k != "estimator" and k != "target_asr":
             conf[k] = v
     return conf
 
