@@ -1,6 +1,6 @@
 {
     "output_dir": "output/",
     "tts" : ["casual", "google"],
-    "asr" : "nemo"
+    "asr" : "wav2letter"
 }
 

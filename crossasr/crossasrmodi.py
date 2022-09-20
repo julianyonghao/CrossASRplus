@@ -334,8 +334,11 @@ class CrossASRmodi:
             transcription = self.asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
             num_retry = 0
             while transcription == "" and num_retry < self.max_num_retry:
+                print("...............Retrying............." + filename)
+
                 start_time = time.time()
-                self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                self.asr.setTranscription(transcription)
                 self.asr.saveTranscription(
                     transcription_dir=transcription_dir, filename=filename)
                 save_execution_time(
