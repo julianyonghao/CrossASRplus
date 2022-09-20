@@ -1,14 +1,14 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_assembly_test/",
-    "corpus_fpath": "/mnt/f/casual_data/Casual_Data_LJ/",
+    "output_dir": "output/casual_lj_wav2vec2_test/",
+    "corpus_fpath": "casual_data/Casual_Data_LJ/",
     "tts" : ["casual","google"],
-    "asrs" : ["assembly","wit"],
-    "target_asr" : "assembly",
-    "recompute": true,
+    "asrs" : ["wav2vec2","assembly"],
+    "target_asr" : "wav2vec2",
+    "recompute": false,
     "time_budget": 42069,
-    "num_iteration": 5,
-    "text_batch_size": 2,
+    "num_iteration": 11,
+    "text_batch_size": 10,
     "estimator": "facebook/bart-base",
     "audio_type": "audio"
 }

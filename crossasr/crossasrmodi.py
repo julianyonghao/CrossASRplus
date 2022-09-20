@@ -360,12 +360,11 @@ class CrossASRmodi:
                 time_for_generating_audio_fpath = os.path.join(directory, filename + ".txt")
                 if tts.getName() != "casual":
                     audio_fpath = tts.getAudioPath(text=text, audio_dir=self.audio_dir, filename=filename)
-
+                    start_time = time.time()
                     if self.recompute or not os.path.exists(audio_fpath):
                         # print(audio_fpath)
-                        start_time = time.time()
                         tts.generateAudio(text=text, audio_fpath=audio_fpath)
-                        save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
+                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
                 else:
                     base_dir = os.getcwd()
                     casual_dir = os.path.join(base_dir, cc_dir)
@@ -377,12 +376,11 @@ class CrossASRmodi:
                         audio_fpath = wavfile
                         print(audio_fpath)
 
-
+                    start_time = time.time()
                     if self.recompute or not os.path.exists(audio_fpath):
                         # print(audio_fpath)
-                        start_time = time.time()
                         os.path.relpath(wavfile, base_dir)
-                        save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
+                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
 
                 # add execution time for generating audio
                 execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
@@ -392,8 +390,9 @@ class CrossASRmodi:
                 directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
                 make_dir(directory)
                 time_for_recognizing_audio_fpath = os.path.join(directory, filename + ".txt")
+                transcription_fpath = os.path.join(transcription_dir, asr.getName(), filename + ".txt")
 
-                if self.recompute:
+                if self.recompute or not os.path.exists(transcription_fpath):
                     start_time = time.time()
                     # TODO:
                     # change recognize audio -> input audio instead of fpath
@@ -564,7 +563,7 @@ class CrossASRmodi:
         worksheet = workbook.add_worksheet()
 
         worksheet.write(0,0,"filename")
-        worksheet.write(0, 1, "ASR")
+        worksheet.write(0,1, "ASR")
         worksheet.write(0,2,"original")
         
         row = 1
@@ -600,7 +599,7 @@ class CrossASRmodi:
                             if key == 'filename':
                                 worksheet.write(row,0,case[key])
                             elif key == 'original':
-                                worksheet.write(row,1,case[key])
+                                worksheet.write(row,2,case[key])
                             else:
                                 worksheet.write(row, tts_col_obj[key], case[key])
                         row += 1
