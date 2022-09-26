@@ -234,6 +234,9 @@ def witRecognizeAudio(audio_fpath, token):
             # print("Could not request results from Wit.ai service; {0}".format(e))
             transcription = ""
 
+        random_number = float(random.randint(9, 47)) / 10.
+        time.sleep(random_number)
+        
     return transcription
 
 def nemoRecognizeAudio(audio_fpath):

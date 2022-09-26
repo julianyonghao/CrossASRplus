@@ -1,5 +1,5 @@
 {
-    "output_dir": "output/casual_test/",
+    "output_dir": "output/",
     "tts" : ["casual", "google"],
     "asr" : ["wit", "wav2vec2"],
     "target_asr": "wit",

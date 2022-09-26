@@ -333,7 +333,7 @@ class CrossASRmodi:
         print(f"\tTotal: {data['number_of_failed_test_cases_all'][-1]}")
         print()
 
-    # Julian updated this function 08/09
+
     def processText(self, text: str, filename: str, cc_dir: str):
         """
         Run CrossASR on a single text
@@ -352,46 +352,43 @@ class CrossASRmodi:
         for asr in self.asrs:
             if asr.getName() != self.target_asr.getName():
                 priority_asr_list.append(asr)
+
         for asr in priority_asr_list:
             transcriptions = {}
             for tts in self.ttss:
-                directory = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
-                make_dir(directory)
-                time_for_generating_audio_fpath = os.path.join(directory, filename + ".txt")
+                ### GENERATE/OBTAIN AUDIO FILE FOR ASR
                 if tts.getName() != "casual":
+                    # create directory to save tts execution time
+                    tts_exec_time_dir = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
+                    make_dir(tts_exec_time_dir)
+                    time_for_generating_audio_fpath = os.path.join(tts_exec_time_dir, filename + ".txt")
+
+                    # tts audio output file path (e.g. <output_dir>/data/audio/<TTS>/<wav file>)
                     audio_fpath = tts.getAudioPath(text=text, audio_dir=self.audio_dir, filename=filename)
-                    start_time = time.time()
+
+                    # TTS generates audio if audio file was never generated or if you decide to recompute the operation
                     if self.recompute or not os.path.exists(audio_fpath):
-                        # print(audio_fpath)
+                        start_time = time.time()
                         tts.generateAudio(text=text, audio_fpath=audio_fpath)
-                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
-                else:
-                    base_dir = os.getcwd()
-                    casual_dir = os.path.join(base_dir, cc_dir)
-                    wavfile = os.path.join(casual_dir, filename + ".wav")
+                        save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
 
-                    if asr.getName() != "wav2letter":
-                        audio_fpath = os.path.relpath(wavfile, base_dir)
-                    else:
-                        audio_fpath = wavfile
-                        print(audio_fpath)
+                else: # human audio (no execution needed)
+                    audio_fpath = os.path.join(cc_dir, filename + ".wav")
 
-                    start_time = time.time()
-                    if self.recompute or not os.path.exists(audio_fpath):
-                        # print(audio_fpath)
-                        os.path.relpath(wavfile, base_dir)
-                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
 
-                # add execution time for generating audio
+                # add execution time for generating audio into process_text execution time
                 execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
 
+                # create directory to save asr execution time
                 transcription_dir = os.path.join(self.transcription_dir, tts.getName())
+                asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
+                make_dir(asr_exec_time_dir)
+                time_for_recognizing_audio_fpath = os.path.join(asr_exec_time_dir, filename + ".txt")
 
-                directory = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
-                make_dir(directory)
-                time_for_recognizing_audio_fpath = os.path.join(directory, filename + ".txt")
-                transcription_fpath = os.path.join(transcription_dir, asr.getName(), filename + ".txt")
+                # asr audio output file path (e.g. <output_dir>/data/transcription/<TTS>/<ASR>/<txt file>)
+                transcription_fpath = os.path.join(transcription_dir, self.asr.getName(), filename + ".txt")
 
+                ## Check if initial asr computation exists
                 if self.recompute or not os.path.exists(transcription_fpath):
                     start_time = time.time()
                     # TODO:
@@ -399,34 +396,38 @@ class CrossASRmodi:
                     # audio = asr.loadAudio(audio_fpath=audio_fpath)
                     # transcription = asr.recognizeAudio(audio=audio)
                     # asr.saveTranscription(transcription_fpath, transcription)
-                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
-                    asr.setTranscription(transcription)
-                    asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
+                    transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                    self.asr.setTranscription(transcription)
+                    self.asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
                     save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
 
-                transcription = asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
+                ## Retry asr computation if there is no transcription in file
+                transcription = self.asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
                 num_retry = 0
                 while transcription == "" and num_retry < self.max_num_retry:
+                    print("...............Retrying............." + filename)
+
                     start_time = time.time()
-                    asr.recognizeAudio(audio_fpath=audio_fpath)
-                    asr.saveTranscription(
+                    transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
+                    self.asr.setTranscription(transcription)
+                    self.asr.saveTranscription(
                         transcription_dir=transcription_dir, filename=filename)
                     save_execution_time(
                         fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
-                    transcription = asr.loadTranscription(
+                    transcription = self.asr.loadTranscription(
                         transcription_dir=transcription_dir, filename=filename)
-
-                    if self.asr.getName() == "wit":
-                        random_number = float(random.randint(9, 47)) / 10.
-                        time.sleep(random_number)
 
                     num_retry += 1
 
-                transcriptions[tts.getName()] =  preprocess_text(transcription)
+                # preprocess transcription
+                transcriptions[tts.getName()] = preprocess_text(transcription)
 
                 ## add execution time for generating audio
                 execution_time += get_execution_time(
                     fpath=time_for_recognizing_audio_fpath)
+
+
+                ## starts here
             global_transcriptions[asr.getName()] = transcriptions
             if asr.getName() == self.target_asr.getName():
                 target_is_false_alarm = self.isFalseAlarm(text, transcriptions)
@@ -434,13 +435,6 @@ class CrossASRmodi:
                     break
 
         cases = self.casesDeterminer(text, global_transcriptions)
-        #{'wit': [{'google': 0.2962962962962963, 'casual': 0.0}, {'google': 3, 'casual': 2}, {'original': 'printing in the only sense with which we are at present concerned differs from most if not from all the arts
-        #and crafts represented in the exhibition', 'google': 'printing in the only sense with which we are at present concerned differs from most if not from all'}], 'wav2vec2': ({'google': 0.0, 'casual': 0.0}, {'go
-        #ogle': 2, 'casual': 2}, {})}
-
-        # ({'casual_wit': 0.0}, {'casual_wit': 0})
-        # cases_list: [({'google': 0.0}, {'google': 2}), ({'casual': 0.0}, {'casual': 0})]
-        # cases: ({'google_wit': 0.0, 'casual_wit': 0.0}, {'google_wit': 2, 'casual_wit': 2})
        
         # To re-create cases list 
         for asr_name, each_case in cases.items():
