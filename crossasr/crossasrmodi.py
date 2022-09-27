@@ -105,10 +105,10 @@ class CrossASRmodi:
         self.ttss.append(tts)
 
     def getASRS(self):
-        return self.asr
+        return self.asrs
 
     def addASR(self, asr: ASR):
-        self.asr = asr
+        self.target_asr = asr
 
     def removeASR(self, asr_name: str):
         for i, asr in enumerate(self.asrs):
@@ -286,13 +286,11 @@ class CrossASRmodi:
         file.close()
         return case
 
-    # Julian updated this function 08/09
-    # Zi Qian updated this function 23/8
-    def printResult(self, text: str, filename: str):
 
+    def printResult(self, text: str, filename: str):
         print()
         print(f"TTSs: {[tts.getName() for tts in self.ttss]}")
-        print(f"ASR: {self.asr.getName()}")
+        print(f"ASR: {self.target_asr.getName()}")
         print()
         print(f"Input text: {text}")
         print()
@@ -300,26 +298,26 @@ class CrossASRmodi:
             print(f"Transcription: {tts.getName()}")
             transcription_dir = os.path.join(
                 self.transcription_dir, tts.getName())
-            transcription = self.asr.loadTranscription(
+            transcription = self.target_asr.loadTranscription(
                 transcription_dir=transcription_dir, filename=filename)
-            print(f"\t {self.asr.getName()}: {preprocess_text(transcription)}")
+            print(f"\t {self.target_asr.getName()}: {preprocess_text(transcription)}")
 
 
         print()
         for tts in self.ttss:
             print(f"Cases: {tts.getName()}")
-            case = self.getCase(self.case_dir, tts.getName(), self.asr.getName(), filename)
-            wer = self.getCaseWER(self.case_dir, tts.getName(), self.asr.getName(), filename)
+            case = self.getCase(self.case_dir, tts.getName(), self.target_asr.getName(), filename)
+            wer = self.getCaseWER(self.case_dir, tts.getName(), self.target_asr.getName(), filename)
 
             if case == FAILED_TEST_CASE:
-                print(f"\t {self.asr.getName()}: failed test case")
+                print(f"\t {self.target_asr.getName()}: failed test case")
                 print(f"\t WER: {wer}")
 
             elif case == SUCCESSFUL_TEST_CASE:
-                print(f"\t {self.asr.getName()}: successful test case")
+                print(f"\t {self.target_asr.getName()}: successful test case")
                 print(f"\t WER: {wer}")
             else:
-                print(f"\t {self.asr.getName()}: indeterminable test case")
+                print(f"\t {self.target_asr.getName()}: indeterminable test case")
                 print(f"\t WER: {wer}")
         print()
 
@@ -381,12 +379,12 @@ class CrossASRmodi:
 
                 # create directory to save asr execution time
                 transcription_dir = os.path.join(self.transcription_dir, tts.getName())
-                asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
+                asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
                 make_dir(asr_exec_time_dir)
                 time_for_recognizing_audio_fpath = os.path.join(asr_exec_time_dir, filename + ".txt")
 
                 # asr audio output file path (e.g. <output_dir>/data/transcription/<TTS>/<ASR>/<txt file>)
-                transcription_fpath = os.path.join(transcription_dir, self.asr.getName(), filename + ".txt")
+                transcription_fpath = os.path.join(transcription_dir, asr.getName(), filename + ".txt")
 
                 ## Check if initial asr computation exists
                 if self.recompute or not os.path.exists(transcription_fpath):
@@ -396,25 +394,25 @@ class CrossASRmodi:
                     # audio = asr.loadAudio(audio_fpath=audio_fpath)
                     # transcription = asr.recognizeAudio(audio=audio)
                     # asr.saveTranscription(transcription_fpath, transcription)
-                    transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
-                    self.asr.setTranscription(transcription)
-                    self.asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
+                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
+                    asr.setTranscription(transcription)
+                    asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
                     save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
 
                 ## Retry asr computation if there is no transcription in file
-                transcription = self.asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
+                transcription = asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
                 num_retry = 0
                 while transcription == "" and num_retry < self.max_num_retry:
                     print("...............Retrying............." + filename)
 
                     start_time = time.time()
-                    transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
-                    self.asr.setTranscription(transcription)
-                    self.asr.saveTranscription(
+                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
+                    asr.setTranscription(transcription)
+                    asr.saveTranscription(
                         transcription_dir=transcription_dir, filename=filename)
                     save_execution_time(
                         fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
-                    transcription = self.asr.loadTranscription(
+                    transcription = asr.loadTranscription(
                         transcription_dir=transcription_dir, filename=filename)
 
                     num_retry += 1

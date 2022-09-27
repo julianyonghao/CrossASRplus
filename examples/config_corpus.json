@@ -1,9 +1,9 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_wav2vec2_test/",
+    "output_dir": "output/casual_output_test/",
     "corpus_fpath": "casual_data/Casual_Data_LJ/",
-    "tts" : ["casual","google"],
-    "asrs" : ["wav2vec2","assembly"],
+    "tts" : ["casual","espeak"],
+    "asrs" : ["wav2vec2", "deepspeech2"],
     "target_asr" : "wav2vec2",
     "recompute": false,
     "time_budget": 42069,
