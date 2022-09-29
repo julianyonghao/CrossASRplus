@@ -604,7 +604,10 @@ class CrossASRmodi:
                     remaining_texts = unprocessed_texts
 
                 # num_false_alarms_test_cases.append(calculate_cases(cases, mode=FALSE_ALARM_TEST_CASE))
-                num_false_alarms_test_cases.append(len(false_alarm_arr))
+                if len(num_false_alarms_test_cases) > 0:
+                    num_false_alarms_test_cases.append(len(false_alarm_arr) + num_false_alarms_test_cases[len(num_false_alarms_test_cases)-1])
+                else:
+                    num_false_alarms_test_cases.append(len(false_alarm_arr))
                 # num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
                 #     cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
                 num_processed_texts.append(len(processed_texts))
