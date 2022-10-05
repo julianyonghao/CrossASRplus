@@ -1,6 +1,6 @@
 {
-    "output_dir": "output/",
-    "tts" : ["casual", "google"],
-    "asr" : "wav2letter"
+    "output_dir": "output/lj_espeak_deepspeech_test",
+    "tts" : ["casual", "espeak"],
+    "asr" : "deepspeech"
 }
 
