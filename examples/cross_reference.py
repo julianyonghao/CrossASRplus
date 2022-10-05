@@ -16,7 +16,6 @@ if __name__ == "__main__":
 
     tts = utils.getTTSS(config["tts"])
     asr = utils.getASR(config["asr"])
-    # cc_audio_type = ""
     
     crossasr = CrossASRmodi(tts=tts, asr=asr, output_dir=config["output_dir"], recompute=True)
 
