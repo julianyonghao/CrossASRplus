@@ -47,7 +47,6 @@ class CrossASRmodi:
         self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
         self.outputfile_false_alarms = self.get_outputfile_for_false_alarms()
 
-        # Zi Qian added this 23/8
         self.wer_temp = {}
 
         self.audio_type = audio_type
@@ -548,8 +547,6 @@ class CrossASRmodi:
         num_false_alarms_test_cases = []
         num_failed_test_cases_per_tts = {}
         num_processed_texts = []
-        false_alarms = []
-
 
         workbook = xlsxwriter.Workbook(self.outputfile_false_alarms)
         worksheet = workbook.add_worksheet()
@@ -584,7 +581,6 @@ class CrossASRmodi:
                 curr_cases, curr_processsed_texts, unprocessed_texts, false_alarm_arr = self.processOneIteration(curr_texts,
                                                                                                 processed_texts, cases)
                 for obj in false_alarm_arr:
-                    # false_alarms.append(obj)
                     for asr_name, case in obj.items():
                         worksheet.write(row, 1, asr_name)
                         for key in case.keys():
@@ -603,13 +599,11 @@ class CrossASRmodi:
                 else:
                     remaining_texts = unprocessed_texts
 
-                # num_false_alarms_test_cases.append(calculate_cases(cases, mode=FALSE_ALARM_TEST_CASE))
                 if len(num_false_alarms_test_cases) > 0:
                     num_false_alarms_test_cases.append(len(false_alarm_arr) + num_false_alarms_test_cases[len(num_false_alarms_test_cases)-1])
                 else:
                     num_false_alarms_test_cases.append(len(false_alarm_arr))
-                # num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
-                #     cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
+
                 num_processed_texts.append(len(processed_texts))
                 self.writeResult(cases, num_false_alarms_test_cases, num_processed_texts)
 
