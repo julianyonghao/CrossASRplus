@@ -31,6 +31,9 @@ from crossasr.textmodi import TextModi
 
 from estimator.huggingface import HuggingFaceTransformer
 
+from pocketsphinx import Decoder
+import wave
+
 
 WIT_ACCESS_TOKEN = os.getenv("WIT_ACCESS_TOKEN")
 
@@ -241,6 +244,14 @@ def nemoRecognizeAudio(audio_fpath):
     # asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_citrinet_512")
     transcription = asr_model.transcribe([audio_fpath])
     return transcription[0]
+
+def pocketRecognizeAudio(audio_fpath):
+    with wave.open(audio_fpath, "rb") as audio:
+        decoder = Decoder(samprate=audio.getframerate())
+        decoder.start_utt()
+        decoder.process_raw(audio.getfp().read(), full_utt=True)
+        decoder.end_utt()
+        return decoder.hyp().hypstr
 
 # 7/9 - ziqian added a new asr (AssemblyAI)
 def assembly_read_file(audio_fpath, chunk_size=5242880):
