@@ -134,7 +134,9 @@ def tacotronGenerateAudio(text, audio_fpath):
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
 
-def speedyspeechGenerateAudio(text:str, audio_fpath:str):
+def speedyspeechGenerateAudio(text, audio_fpath):
+    os.makedirs(os.path.dirname(audio_fpath), exist_ok=True)
+
     if text[len(text)-1] == ".":
         text = text[:len(text)-1]
     text += " ."
