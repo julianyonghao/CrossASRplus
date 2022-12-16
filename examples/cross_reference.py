@@ -23,7 +23,7 @@ if __name__ == "__main__":
     cc_filename = "LJ001-0001"
 
     # casual_dir = os.path.join(CASUAL_DIR, cc_audio_type)
-    casual_dir = os.path.join("/mnt/f/casual_data/Casual_Data_LJ/")
+    casual_dir = os.path.join("casual_data/Casual_Data_LJ/")
     fpath = os.path.join(casual_dir, "transcription", cc_filename + ".txt")
     casual_audio_dir = os.path.join(casual_dir, "audio")
     file = open(fpath, "r")
