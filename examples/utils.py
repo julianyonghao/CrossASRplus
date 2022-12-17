@@ -253,6 +253,17 @@ def pocketRecognizeAudio(audio_fpath):
         decoder.end_utt()
         return decoder.hyp().hypstr
 
+def voskRecognizeAudio(audio_fpath):
+    cmd = " vosk-transcriber -i " + audio_fpath
+
+    proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+
+    transcription = out.decode("utf-8")[:-1]
+
+    # print("DeepSpeech transcription: %s" % transcription)
+    return transcription
+
 # 7/9 - ziqian added a new asr (AssemblyAI)
 def assembly_read_file(audio_fpath, chunk_size=5242880):
     with open(audio_fpath, 'rb') as _file:

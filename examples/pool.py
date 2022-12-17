@@ -12,6 +12,7 @@ from asr.wit import Wit
 from asr.nemo import Nemo
 from asr.assembly import Assembly
 from asr.pocket import Pocket
+from asr.vosk import Vosk
 
 tts_pool = [Google(), Espeak(), Festival(), ResponsiveVoice(), Casual()]
-asr_pool = [Wav2Vec2(), DeepSpeech(), DeepSpeech2(), Wav2Letter(), Wit(), Nemo(), Assembly(), Pocket()]
+asr_pool = [Wav2Vec2(), DeepSpeech(), DeepSpeech2(), Wav2Letter(), Wit(), Nemo(), Assembly(), Pocket(), Vosk()]
