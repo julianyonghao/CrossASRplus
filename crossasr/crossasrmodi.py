@@ -21,13 +21,12 @@ import xlsxwriter
 # from evaluate import load
 from crossasr.textmodi import TextModi
 
-
 class CrossASRmodi:
-    def __init__(self, tts: [TTS], asr: ASR, output_dir: "", recompute=False, num_iteration=5,
+    def __init__(self, tts: [TTS], asr: [ASR], output_dir: "", recompute=False, num_iteration=5, target_asr = ASR,
                  time_budget=3600, max_num_retry=0, text_batch_size=None, seed=None, estimator=None, audio_type="audio_raw", corpus_fpath=None):
         self.ttss = tts
-        self.asr = asr
-        self.target_asr = asr
+        self.asrs = asr
+        self.target_asr = target_asr
 
         self.output_dir = output_dir
         self.casual_dir = corpus_fpath
@@ -48,7 +47,6 @@ class CrossASRmodi:
         self.outputfile_failed_test_case = self.get_outputfile_for_failed_test_case()
         self.outputfile_false_alarms = self.get_outputfile_for_false_alarms()
 
-        # Zi Qian added this 23/8
         self.wer_temp = {}
 
         self.audio_type = audio_type
@@ -65,10 +63,11 @@ class CrossASRmodi:
 
         # init directory for save the transcription
         for tts in self.ttss:
-            make_dir(os.path.join(self.transcription_dir, tts.getName(), self.asr.getName()))
+            for asr in self.asrs:
+                make_dir(os.path.join(self.transcription_dir, tts.getName(), asr.getName()))
 
     def get_outputfile_for_failed_test_case(self):
-        asr_dir = self.asr.getName()
+        asr_dir = self.target_asr.getName()
         ttss_dir = "_".join([tts.getName() for tts in self.ttss])
         result_dir = os.path.join(self.output_dir,
                                   "result",
@@ -81,7 +80,7 @@ class CrossASRmodi:
         return os.path.join(result_dir, experiment_name + ".json")
     
     def get_outputfile_for_false_alarms(self):
-        asr_dir = self.asr.getName()
+        asr_dir = self.target_asr.getName()
         ttss_dir = "_".join([tts.getName() for tts in self.ttss])
         result_dir = os.path.join(self.output_dir,
                                   "result",
@@ -105,17 +104,17 @@ class CrossASRmodi:
         self.ttss.append(tts)
 
     def getASRS(self):
-        return self.asr
+        return self.asrs
 
     def addASR(self, asr: ASR):
-        self.asr = asr
+        self.target_asr = asr
 
-    # Julian removed this 08/09 - since only one asr
-    # def removeASR(self, asr_name: str):
-    #     for i, asr in enumerate(self.asrs):
-    #         if asr_name == asr.getName():
-    #             break
-    #     del self.asrs[i]
+    def removeASR(self, asr_name: str):
+        for i, asr in enumerate(self.asrs):
+            if asr_name == asr.getName():
+                del self.asrs[i]
+                break
+
 
     def getOutputDir(self):
         return self.audio_dir
@@ -128,13 +127,12 @@ class CrossASRmodi:
         self.execution_time_dir = os.path.join(output_dir, EXECUTION_TIME_DIR)
         self.case_dir = os.path.join(output_dir, CASE_DIR)
 
-    # Zi Qian updated this function 23/8
-    def caseDeterminer(self, text: str, transcriptions: str):
+    def isFalseAlarm(self, text: str, transcriptions: dict):
         # word error rate
         wers = {}
 
         is_determinable = False
-    
+
         # print(transcriptions)
         # {'google_wit': 'is technology making our attention span shorter'}
         # ({'google_wit': 0.0}, {'google_wit': 2})
@@ -149,21 +147,53 @@ class CrossASRmodi:
             if word_error_rate == 0:
                 is_determinable = True
 
-        case = {}
-    
         if is_determinable:
-            for k in transcriptions.keys():
-                if wers[k] == 0:
-                    case[k] = SUCCESSFUL_TEST_CASE
-                else:
-                    case[k] = FAILED_TEST_CASE
+            casual_wer = wers['casual']
+            for k, single_wer in wers.items():
+                if k != 'casual':
+                    if casual_wer == 0 and casual_wer != single_wer:
+                        return True
+            return False
         else:
-            for k in transcriptions.keys():
-                case[k] = INDETERMINABLE_TEST_CASE
+           return False
 
-        return wers, case
 
-    def casesDeterminer(self, text: str, transcriptions: dict):
+    # Zi Qian updated this function 23/8
+    # def caseDeterminer(self, text: str, transcriptions: str):
+    #     # word error rate
+    #     wers = {}
+    #
+    #     is_determinable = False
+    #
+    #     # print(transcriptions)
+    #     # {'google_wit': 'is technology making our attention span shorter'}
+    #     # ({'google_wit': 0.0}, {'google_wit': 2})
+    #     # TESTTTT
+    #     # {'casual_wit': 'is technology making our attention span shorter'}
+    #     # ({'casual_wit': 0.0}, {'casual_wit': 2})
+    #     # output --> casual_data --> enhanced/mono --> ASR --> id_flag.text
+    #
+    #     for k, transcription in transcriptions.items():
+    #         word_error_rate = wer(text, transcription)
+    #         wers[k] = word_error_rate
+    #         if word_error_rate == 0:
+    #             is_determinable = True
+    #
+    #     case = {}
+    #
+    #     if is_determinable:
+    #         for k in transcriptions.keys():
+    #             if wers[k] == 0:
+    #                 case[k] = SUCCESSFUL_TEST_CASE
+    #             else:
+    #                 case[k] = FAILED_TEST_CASE
+    #     else:
+    #         for k in transcriptions.keys():
+    #             case[k] = INDETERMINABLE_TEST_CASE
+    #
+    #     return wers, case
+
+    def caseDeterminer(self, text: str, transcriptions: dict):
         # word error rate
         wers = {}
         false_alarm_transcriptions = {}
@@ -171,10 +201,10 @@ class CrossASRmodi:
         is_determinable = False
 
         is_false_alarm = False
-    
+
         print(transcriptions)
         # {
-        # 'google_wit': 'is technology making our attention span shorter', 
+        # 'google_wit': 'is technology making our attention span shorter',
         # 'festival_wit': '',
         # 'casual_wit': 'is technology making our attention span shorter'
         # }
@@ -209,7 +239,16 @@ class CrossASRmodi:
             for k in transcriptions.keys():
                 case[k] = INDETERMINABLE_TEST_CASE
 
-        return wers, case, false_alarm_transcriptions
+        return [wers, case, false_alarm_transcriptions]
+
+    def casesDeterminer(self, text: str, transcriptions_from_multi_asrs: dict):
+        output = {}
+        for asr, transcriptions in transcriptions_from_multi_asrs.items():
+            cases = self.caseDeterminer(text, transcriptions)
+            output[asr] = cases
+
+        return output
+
 
     def saveCase(self, case_dir: str, tts_name: str, asr_name: str, filename: str, case: str):
         case_dir = os.path.join(case_dir, tts_name, asr_name)
@@ -246,13 +285,11 @@ class CrossASRmodi:
         file.close()
         return case
 
-    # Julian updated this function 08/09
-    # Zi Qian updated this function 23/8
-    def printResult(self, text: str, filename: str):
 
+    def printResult(self, text: str, filename: str):
         print()
         print(f"TTSs: {[tts.getName() for tts in self.ttss]}")
-        print(f"ASR: {self.asr.getName()}")
+        print(f"ASR: {self.target_asr.getName()}")
         print()
         print(f"Input text: {text}")
         print()
@@ -260,26 +297,26 @@ class CrossASRmodi:
             print(f"Transcription: {tts.getName()}")
             transcription_dir = os.path.join(
                 self.transcription_dir, tts.getName())
-            transcription = self.asr.loadTranscription(
+            transcription = self.target_asr.loadTranscription(
                 transcription_dir=transcription_dir, filename=filename)
-            print(f"\t {self.asr.getName()}: {preprocess_text(transcription)}")
+            print(f"\t {self.target_asr.getName()}: {preprocess_text(transcription)}")
 
 
         print()
         for tts in self.ttss:
             print(f"Cases: {tts.getName()}")
-            case = self.getCase(self.case_dir, tts.getName(), self.asr.getName(), filename)
-            wer = self.getCaseWER(self.case_dir, tts.getName(), self.asr.getName(), filename)
+            case = self.getCase(self.case_dir, tts.getName(), self.target_asr.getName(), filename)
+            wer = self.getCaseWER(self.case_dir, tts.getName(), self.target_asr.getName(), filename)
 
             if case == FAILED_TEST_CASE:
-                print(f"\t {self.asr.getName()}: failed test case")
+                print(f"\t {self.target_asr.getName()}: failed test case")
                 print(f"\t WER: {wer}")
 
             elif case == SUCCESSFUL_TEST_CASE:
-                print(f"\t {self.asr.getName()}: successful test case")
+                print(f"\t {self.target_asr.getName()}: successful test case")
                 print(f"\t WER: {wer}")
             else:
-                print(f"\t {self.asr.getName()}: indeterminable test case")
+                print(f"\t {self.target_asr.getName()}: indeterminable test case")
                 print(f"\t WER: {wer}")
         print()
 
@@ -304,119 +341,136 @@ class CrossASRmodi:
         :returns execution time:
         """
         execution_time = 0.
-        transcriptions = {}
-        cases_list = []
+        global_transcriptions = {}
+        cases_list = {}
 
-        for tts in self.ttss:
-            ### GENERATE/OBTAIN AUDIO FILE FOR ASR
-            if tts.getName() != "casual":
-                # create directory to save tts execution time
-                tts_exec_time_dir = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
-                make_dir(tts_exec_time_dir)
-                time_for_generating_audio_fpath = os.path.join(tts_exec_time_dir, filename + ".txt")
+        #ensures the target ASR runs first
+        priority_asr_list = [self.target_asr]
+        for asr in self.asrs:
+            if asr.getName() != self.target_asr.getName():
+                priority_asr_list.append(asr)
 
-                # tts audio output file path (e.g. <output_dir>/data/audio/<TTS>/<wav file>)
-                audio_fpath = tts.getAudioPath(text=text, audio_dir=self.audio_dir, filename=filename)
+        for asr in priority_asr_list:
+            transcriptions = {}
+            for tts in self.ttss:
+                ### GENERATE/OBTAIN AUDIO FILE FOR ASR
+                if tts.getName() != "casual":
+                    # create directory to save tts execution time
+                    tts_exec_time_dir = os.path.join(self.execution_time_dir, AUDIO_DIR, tts.getName())
+                    make_dir(tts_exec_time_dir)
+                    time_for_generating_audio_fpath = os.path.join(tts_exec_time_dir, filename + ".txt")
 
-                # TTS generates audio if audio file was never generated or if you decide to recompute the operation
-                if self.recompute or not os.path.exists(audio_fpath):
-                    start_time = time.time()
-                    tts.generateAudio(text=text, audio_fpath=audio_fpath)
-                    save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
+                    # tts audio output file path (e.g. <output_dir>/data/audio/<TTS>/<wav file>)
+                    audio_fpath = tts.getAudioPath(text=text, audio_dir=self.audio_dir, filename=filename)
+
+                    # TTS generates audio if audio file was never generated or if you decide to recompute the operation
+                    if self.recompute or not os.path.exists(audio_fpath):
+                        start_time = time.time()
+                        tts.generateAudio(text=text, audio_fpath=audio_fpath)
+                        save_execution_time(fpath=time_for_generating_audio_fpath, execution_time=time.time() - start_time)
+
+                else: # human audio (no execution needed)
+                    audio_fpath = os.path.join(cc_dir, filename + ".wav")
+
 
                 # add execution time for generating audio into process_text execution time
                 execution_time += get_execution_time(fpath=time_for_generating_audio_fpath)
 
-            else: # human audio (no execution needed)
-                audio_fpath = os.path.join(cc_dir, filename + ".wav")
-                
+                # create directory to save asr execution time
+                transcription_dir = os.path.join(self.transcription_dir, tts.getName())
+                asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), asr.getName())
+                make_dir(asr_exec_time_dir)
+                time_for_recognizing_audio_fpath = os.path.join(asr_exec_time_dir, filename + ".txt")
 
-            # create directory to save asr execution time
-            transcription_dir = os.path.join(self.transcription_dir, tts.getName())
-            asr_exec_time_dir = os.path.join(self.execution_time_dir, TRANSCRIPTION_DIR, tts.getName(), self.asr.getName())
-            make_dir(asr_exec_time_dir)
-            time_for_recognizing_audio_fpath = os.path.join(asr_exec_time_dir, filename + ".txt")
+                # asr audio output file path (e.g. <output_dir>/data/transcription/<TTS>/<ASR>/<txt file>)
+                transcription_fpath = os.path.join(transcription_dir, asr.getName(), filename + ".txt")
 
-            # asr audio output file path (e.g. <output_dir>/data/transcription/<TTS>/<ASR>/<txt file>)
-            transcription_fpath = os.path.join(transcription_dir, self.asr.getName(), filename + ".txt")
+                ## Check if initial asr computation exists
+                if self.recompute or not os.path.exists(transcription_fpath):
+                    start_time = time.time()
+                    # TODO:
+                    # change recognize audio -> input audio instead of fpath
+                    # audio = asr.loadAudio(audio_fpath=audio_fpath)
+                    # transcription = asr.recognizeAudio(audio=audio)
+                    # asr.saveTranscription(transcription_fpath, transcription)
+                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
+                    asr.setTranscription(transcription)
+                    asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
+                    save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
 
-            if self.recompute or not os.path.exists(transcription_fpath):
-                start_time = time.time()
-                # TODO:
-                # change recognize audio -> input audio instead of fpath
-                # audio = asr.loadAudio(audio_fpath=audio_fpath)
-                # transcription = asr.recognizeAudio(audio=audio)
-                # asr.saveTranscription(transcription_fpath, transcription)
-                transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
-                self.asr.setTranscription(transcription)
-                self.asr.saveTranscription(transcription_dir=transcription_dir, filename=filename)
-                save_execution_time(fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
+                ## Retry asr computation if there is no transcription in file
+                transcription = asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
+                num_retry = 0
+                while transcription == "" and num_retry < self.max_num_retry:
+                    print("...............Retrying............." + filename)
 
-            transcription = self.asr.loadTranscription(transcription_dir=transcription_dir, filename=filename)
-            num_retry = 0
-            while transcription == "" and num_retry < self.max_num_retry:
-                print("...............Retrying............." + filename)
+                    start_time = time.time()
+                    transcription = asr.recognizeAudio(audio_fpath=audio_fpath)
+                    asr.setTranscription(transcription)
+                    asr.saveTranscription(
+                        transcription_dir=transcription_dir, filename=filename)
+                    save_execution_time(
+                        fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
+                    transcription = asr.loadTranscription(
+                        transcription_dir=transcription_dir, filename=filename)
 
-                start_time = time.time()
-                transcription = self.asr.recognizeAudio(audio_fpath=audio_fpath)
-                self.asr.setTranscription(transcription)
-                self.asr.saveTranscription(
-                    transcription_dir=transcription_dir, filename=filename)
-                save_execution_time(
-                    fpath=time_for_recognizing_audio_fpath, execution_time=time.time() - start_time)
-                transcription = self.asr.loadTranscription(
-                    transcription_dir=transcription_dir, filename=filename)
+                    num_retry += 1
 
-                if self.asr.getName() == "wit":
-                    random_number = float(random.randint(9, 47)) / 10.
-                    time.sleep(random_number)
+                # preprocess transcription
+                transcriptions[tts.getName()] = preprocess_text(transcription)
 
-                num_retry += 1
+                ## add execution time for generating audio
+                execution_time += get_execution_time(
+                    fpath=time_for_recognizing_audio_fpath)
 
-            transcriptions[tts.getName()] = preprocess_text(transcription)
 
-            ## add execution time for generating audio
-            execution_time += get_execution_time(
-                fpath=time_for_recognizing_audio_fpath)
+                ## starts here
+            global_transcriptions[asr.getName()] = transcriptions
+            if asr.getName() == self.target_asr.getName():
+                target_is_false_alarm = self.isFalseAlarm(text, transcriptions)
+                if not target_is_false_alarm:
+                    break
 
-                # cases = self.caseDeterminer(text, transcriptions)
-                # print(cases)
-                # ({'casual_wit': 0.0}, {'casual_wit': 0})
-                # print(transcriptions)
-                # print(cases)
-                # if sum(cases.values()) == 0 :
-                #     print(text)
-                #     print(transcriptions["wav2vec2"])
-                #     print(cases)
-                #     print()
-        cases = self.casesDeterminer(text, transcriptions)
-        # ({'casual_wit': 0.0}, {'casual_wit': 0})
-        # cases_list: [({'google': 0.0}, {'google': 2}), ({'casual': 0.0}, {'casual': 0})]
-        # cases: ({'google_wit': 0.0, 'casual_wit': 0.0}, {'google_wit': 2, 'casual_wit': 2})
+        cases = self.casesDeterminer(text, global_transcriptions)
        
         # To re-create cases list 
-        for k, value in cases[0].items():
-            wer_obj = {}
-            case_obj = {}
-            wer_obj[k] = value 
-            case_obj[k] = cases[1][k]
-            tuple = (wer_obj, case_obj)
-            cases_list.append(tuple)
+        for asr_name, each_case in cases.items():
+            local_cases_list = []
+            for tts_name, inner_case in each_case[0].items():
+                wer_obj = {}
+                case_obj = {}
+                wer_obj[tts_name] = inner_case
+                case_obj[tts_name] = each_case[1][tts_name]
+                tuple = (wer_obj, case_obj)
+                local_cases_list.append(tuple)
+            cases_list[asr_name] = local_cases_list
 
-        for tts_name, case in cases[1].items():
-            self.saveCase(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
+        for asr_name, each_case in cases.items():
+            for tts_name, case in each_case[1].items():
+                self.saveCase(self.case_dir, tts_name, asr_name, filename, str(case))
 
-        # write WER into file
-        for tts_name, case in cases[0].items():
-            self.saveCaseWER(self.case_dir, tts_name, self.asr.getName(), filename, str(case))
-        
-        if cases[2]:
-            cases[2]['filename'] = filename
-            print('cases_filename') 
-            print(cases)
+        # # write WER into file
+        for asr_name, each_case in cases.items():
+            for tts_name, case in each_case[0].items():
+                self.saveCaseWER(self.case_dir, tts_name, asr_name, filename, str(case))
+
+        false_alarm_transcription_per_asr = {}
+        num_false_alarm = 0
+        if cases[self.target_asr.getName()][2]:
+            for asr_name, each_case in cases.items():
+                if each_case[2]:
+                    num_false_alarm += 1
+                    each_case[2]['filename'] = filename
+                    false_alarm_transcription_per_asr[asr_name] = each_case[2]
+                    print('cases_filename')
+                    print(cases)
+
+        if num_false_alarm <= 1:
+            false_alarm_transcription_per_asr = {}
+
 
         # print(f"Execution time: {execution_time}")
-        return cases_list, execution_time, cases[2]
+        return cases_list, execution_time, false_alarm_transcription_per_asr
 
     def processOneIteration(self, curr_texts: [TextModi], processed_texts: [TextModi], cases):
         start_time = time.time()
@@ -442,7 +496,7 @@ class CrossASRmodi:
                 text=text.getText(), filename=f"{text.getId()}", cc_dir=os.path.join(self.casual_dir, self.audio_type))
             if false_alarm_transcription_obj:
                 false_alarms.append(false_alarm_transcription_obj)
-            curr_cases.extend(case)
+            curr_cases.append(case)
             execution_time += exec_time
             i += 1
 
@@ -461,11 +515,13 @@ class CrossASRmodi:
         for tts in self.ttss:
             total = 0
             count = 0
-            for tuple_case in cases:
-                key, value = list(tuple_case[0].items())[0]
-                if key == tts.getName():
-                    count += 1
-                    total = total + float(value)
+            for i in range(len(cases)):
+                for asr_name, case in cases[i].items():
+                    for j in range(2):
+                        for tts_name, wer in case[j][0].items():
+                            if tts_name == tts.getName():
+                                count += 1
+                                total = total + float(wer)
             if count != 0:
                 tts_avg_wer[tts.getName()] = total / count
 
@@ -491,17 +547,16 @@ class CrossASRmodi:
         num_false_alarms_test_cases = []
         num_failed_test_cases_per_tts = {}
         num_processed_texts = []
-        false_alarms = []
-
 
         workbook = xlsxwriter.Workbook(self.outputfile_false_alarms)
         worksheet = workbook.add_worksheet()
 
         worksheet.write(0,0,"filename")
-        worksheet.write(0,1,"original")
+        worksheet.write(0,1, "ASR")
+        worksheet.write(0,2,"original")
         
         row = 1
-        col = 2
+        col = 3
         tts_col_obj = {}
         # Save which tts is which column 
         for tts in self.ttss:
@@ -526,15 +581,16 @@ class CrossASRmodi:
                 curr_cases, curr_processsed_texts, unprocessed_texts, false_alarm_arr = self.processOneIteration(curr_texts,
                                                                                                 processed_texts, cases)
                 for obj in false_alarm_arr:
-                    # false_alarms.append(obj)
-                    for key in obj.keys():
-                        if key == 'filename':
-                            worksheet.write(row,0,obj[key])
-                        elif key == 'original':
-                            worksheet.write(row,1,obj[key])
-                        else:
-                            worksheet.write(row, tts_col_obj[key], obj[key])
-                    row += 1
+                    for asr_name, case in obj.items():
+                        worksheet.write(row, 1, asr_name)
+                        for key in case.keys():
+                            if key == 'filename':
+                                worksheet.write(row,0,case[key])
+                            elif key == 'original':
+                                worksheet.write(row,2,case[key])
+                            else:
+                                worksheet.write(row, tts_col_obj[key], case[key])
+                        row += 1
                     
                 cases.extend(curr_cases)
                 processed_texts.extend(curr_processsed_texts)
@@ -543,9 +599,11 @@ class CrossASRmodi:
                 else:
                     remaining_texts = unprocessed_texts
 
-                num_false_alarms_test_cases.append(calculate_cases(cases, mode=FALSE_ALARM_TEST_CASE))
-                # num_failed_test_cases_per_tts[self.asr.getName()].append(calculate_cases_per_asr(
-                #     cases, mode=FAILED_TEST_CASE, asr_name=self.asr.getName()))
+                if len(num_false_alarms_test_cases) > 0:
+                    num_false_alarms_test_cases.append(len(false_alarm_arr) + num_false_alarms_test_cases[len(num_false_alarms_test_cases)-1])
+                else:
+                    num_false_alarms_test_cases.append(len(false_alarm_arr))
+
                 num_processed_texts.append(len(processed_texts))
                 self.writeResult(cases, num_false_alarms_test_cases, num_processed_texts)
 
@@ -554,25 +612,25 @@ class CrossASRmodi:
 
             # shuffle the remaining texts
             np.random.shuffle(remaining_texts)
-        tts_avg_wer = {}
-        for tts in self.ttss:
-            total = 0
-            count = 0
-            for tuple_case in cases:
-                key, value = list(tuple_case[0].items())[0]
-                if key == tts.getName():
-                    count += 1
-                    total = total + float(value)
-            if count != 0:
-                tts_avg_wer[tts.getName()] = total / count
-        data = {}
-        data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
-        # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
-        data["number_of_processed_texts"] = num_processed_texts
-        data["average_word_error_rate"] = tts_avg_wer
-        data["false_alarm_cases"] = false_alarms
-        with open(self.outputfile_failed_test_case, 'w') as outfile:
-            json.dump(data, outfile, indent=2, sort_keys=True)
+        # tts_avg_wer = {}
+        # for tts in self.ttss:
+        #     total = 0
+        #     count = 0
+        #     for tuple_case in cases:
+        #         key, value = list(tuple_case[0].items())[0]
+        #         if key == tts.getName():
+        #             count += 1
+        #             total = total + float(value)
+        #     if count != 0:
+        #         tts_avg_wer[tts.getName()] = total / count
+        # data = {}
+        # data["number_of_false_alarms_test_cases_all"] = num_false_alarms_test_cases
+        # # data["number_of_failed_test_cases_per_asr"] = num_failed_test_cases_per_tts
+        # data["number_of_processed_texts"] = num_processed_texts
+        # data["average_word_error_rate"] = tts_avg_wer
+        # data["false_alarm_cases"] = false_alarms
+        # with open(self.outputfile_failed_test_case, 'w') as outfile:
+        #     json.dump(data, outfile, indent=2, sort_keys=True)
         workbook.close()
         #
         # if self.target_asr:

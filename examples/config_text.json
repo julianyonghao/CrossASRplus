@@ -1,6 +1,8 @@
 {
-    "output_dir": "output/lj_espeak_deepspeech_test",
-    "tts" : ["casual", "espeak"],
-    "asr" : "deepspeech"
+    "output_dir": "output/",
+    "tts" : ["casual", "google"],
+    "asr" : ["wit", "wav2vec2"],
+    "target_asr": "wit",
+    "audio_type": "audio"
 }
 

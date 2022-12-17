@@ -10,7 +10,7 @@ import torch
 import requests
 import time
 from wit import Wit as WitAPI
-import nemo.collections.asr as nemo_asr
+# import nemo.collections.asr as nemo_asr
 
 from pool import asr_pool, tts_pool
 
@@ -117,7 +117,7 @@ def readDirAsCorpus(corpus_fpath: str) :
 def parseConfig(config):
     conf = {}
     for k,v in config.items() :
-        if k != "tts" and k!= "asrs" and k != "estimator":
+        if k != "tts" and k!= "asrs" and k != "estimator" and k != "target_asr":
             conf[k] = v
     return conf
 
@@ -128,6 +128,26 @@ def googleGenerateAudio(text, audio_fpath):
     googleTTS.save(tempfile)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def tacotronGenerateAudio(text, audio_fpath):
+    tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
+    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/tacotron2-DDC_ph\" --out_path " + tempfile
+    print(cmd)
+    os.system(cmd)
+    setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
+    os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def speedyspeechGenerateAudio(text, audio_fpath):
+    os.makedirs(os.path.dirname(audio_fpath), exist_ok=True)
+
+    if text[len(text)-1] == ".":
+        text = text[:len(text)-1]
+    text += " ."
+
+    cmd = "tts --text \"" + text + \
+        "\" --model_name \"tts_models/en/ljspeech/speedy-speech\"" + \
+        " --out_path " + audio_fpath
+    os.system(cmd)
 
 def rvGenerateAudio(text, audio_fpath):
     tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
@@ -237,6 +257,9 @@ def witRecognizeAudio(audio_fpath, token):
             # print("Could not request results from Wit.ai service; {0}".format(e))
             transcription = ""
 
+        random_number = float(random.randint(9, 47)) / 10.
+        time.sleep(random_number)
+        
     return transcription
 
 def nemoRecognizeAudio(audio_fpath):

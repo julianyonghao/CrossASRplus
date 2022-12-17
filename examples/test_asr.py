@@ -12,10 +12,11 @@ if __name__ == "__main__":
     config = utils.readJson(sys.argv[1]) # read json configuration file
 
     tts = utils.getTTSS(config["tts"])
-    asr = utils.getASR(config["asrs"])
+    asr = utils.getASRS(config["asrs"])
+    target_asr = utils.getASR(config["target_asr"])
     estimator = utils.getEstimator(config["estimator"])
 
-    crossasr = CrossASRmodi(tts=tts, asr=asr, estimator=estimator, **utils.parseConfig(config))
+    crossasr = CrossASRmodi(tts=tts, asr=asr, estimator=estimator, target_asr=target_asr, **utils.parseConfig(config))
 
     corpus_fpath = os.path.join(config["corpus_fpath"], "transcription")
     texts = utils.readDirAsCorpus(corpus_fpath=corpus_fpath)
