@@ -4,6 +4,7 @@ import json
 import os, subprocess
 import gc
 import torch
+from pydub import AudioSegment
 import soundfile as sf
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 import torch
@@ -139,6 +140,7 @@ def tacotronGenerateAudio(text, audio_fpath):
 
 def speedyspeechGenerateAudio(text, audio_fpath):
     os.makedirs(os.path.dirname(audio_fpath), exist_ok=True)
+    words = len(text.split())
 
     if text[len(text)-1] == ".":
         text = text[:len(text)-1]
@@ -147,7 +149,12 @@ def speedyspeechGenerateAudio(text, audio_fpath):
     cmd = "tts --text \"" + text + \
         "\" --model_name \"tts_models/en/ljspeech/speedy-speech\"" + \
         " --out_path " + audio_fpath
-    os.system(cmd)
+
+    if words >= 4:
+        os.system(cmd)
+    else:
+        silent_audio = AudioSegment.silent(duration=3000)
+        silent_audio.export(audio_fpath, format="wav")
 
 def rvGenerateAudio(text, audio_fpath):
     tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
