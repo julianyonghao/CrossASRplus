@@ -132,7 +132,16 @@ def googleGenerateAudio(text, audio_fpath):
 
 def tacotronGenerateAudio(text, audio_fpath):
     tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
-    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/tacotron2-DDC_ph\" --out_path " + tempfile
+    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/tacotron2-DDC\" --out_path " + tempfile
+    print(cmd)
+    os.system(cmd)
+    setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
+    os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def glowttsGenerateAudio(text, audio_fpath):
+    tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
+    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/glow-tts\" --out_path " + tempfile
+    print("=================")
     print(cmd)
     os.system(cmd)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "

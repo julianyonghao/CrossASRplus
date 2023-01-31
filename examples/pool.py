@@ -5,6 +5,7 @@ from tts.rv import ResponsiveVoice
 from tts.casual import Casual
 from tts.tacotron import Tacotron
 from tts.speedyspeech import Speedyspeech
+from tts.glowtts import GlowTTS
 
 from asr.deepspeech import DeepSpeech
 from asr.deepspeech2 import DeepSpeech2
@@ -16,5 +17,5 @@ from asr.assembly import Assembly
 from asr.pocket import Pocket
 from asr.vosk import Vosk
 
-tts_pool = [Google(), Espeak(), Festival(), ResponsiveVoice(), Tacotron(), Speedyspeech(), Casual()]
+tts_pool = [Google(), Espeak(), Festival(), ResponsiveVoice(), Tacotron(), Speedyspeech(), GlowTTS(), Casual()]
 asr_pool = [Wav2Vec2(), DeepSpeech(), DeepSpeech2(), Wav2Letter(), Wit(), Nemo(), Assembly(), Pocket(), Vosk()]
