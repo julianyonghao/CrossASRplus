@@ -1,4 +1,5 @@
-# CrossASR++ 
+# Empirical Study on the False Alarms in Automated Speech Recognition Testing
+This repo is a code implementation for the paper ["Synthesizing Speech Test Cases with Text-To-Speech? An Empirical Study on the False Alarms in Automated Speech Recognition Testing"](https://rb.gy/r03ui). Our study investigates false alarm occurences in the usage of Text-To-Speech (TTS) systems to automatically synthesise speech test cases on Automated Speech Recognition (ASR) systems. To do so, we propose augmenting [CrossASR](https://github.com/soarsmu/CrossASRplus) with a false alarm predictor to help developers identify false alarms efficiently.
 
 Developers need to perform adequate testing to ensure the quality of Automatic Speech Recognition (ASR) systems. However, manually collecting required test cases is tedious and time-consuming. Our recent work proposes, namely [CrossASR](https://github.com/soarsmu/CrossASR), a differential testing method for ASR systems. This method first utilizes Text-to-Speech (TTS) to generate audios from texts automatically and then feed these audios into different ASR systems for cross-referencing to uncover failed test cases. It also leverages a failure estimator to find test cases more efficiently. Such a method is inherently self-improvable: the performance can increase by leveraging more advanced TTS and ASR systems. 
 
