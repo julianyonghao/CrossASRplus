@@ -1,5 +1,5 @@
 # Empirical Study on the False Alarms in Automated Speech Recognition Testing
-This repo is a code implementation for the paper ["Synthesizing Speech Test Cases with Text-To-Speech? An Empirical Study on the False Alarms in Automated Speech Recognition Testing"](https://rb.gy/r03ui). Our study investigates false alarm occurences in the usage of Text-To-Speech (TTS) systems to automatically synthesise speech test cases on Automated Speech Recognition (ASR) systems. To do so, we propose augmenting [CrossASR](https://github.com/soarsmu/CrossASRplus) with a false alarm predictor to help developers identify false alarms efficiently.
+This repository is a code implementation for the paper ["Synthesizing Speech Test Cases with Text-To-Speech? An Empirical Study on the False Alarms in Automated Speech Recognition Testing"](https://rb.gy/r03ui). Our study investigates false alarm occurences in the usage of Text-To-Speech (TTS) systems to automatically synthesise speech test cases on Automated Speech Recognition (ASR) systems. To do so, we propose augmenting [CrossASR](https://github.com/soarsmu/CrossASRplus) with a false alarm predictor to help developers identify false alarms efficiently.
 
 Developers need to perform adequate testing to ensure the quality of Automatic Speech Recognition (ASR) systems. However, manually collecting required test cases is tedious and time-consuming. Our recent work proposes, namely [CrossASR](https://github.com/soarsmu/CrossASR), a differential testing method for ASR systems. This method first utilizes Text-to-Speech (TTS) to generate audios from texts automatically and then feed these audios into different ASR systems for cross-referencing to uncover failed test cases. It also leverages a failure estimator to find test cases more efficiently. Such a method is inherently self-improvable: the performance can increase by leveraging more advanced TTS and ASR systems. 
 
@@ -9,118 +9,129 @@ Please check our Tool Demo Video at [https://www.youtube.com/watch?v=ddRk-f0QV-g
 
 PDF preprint is [available](https://mhilmiasyrofi.github.io/papers/CrossASRv2.pdf)
 
-## Installation
+## 1. WSL Installation (Windows)
+1.1 Open Start on Windows > Search "Turn Windows features on or off"
+1.2 Check "Virtual Machine Platform" and "Windows Subsystem for Linux"
+1.3 Open command prompt
+```wsl --update```
+```wsl.exe --install Ubuntu-20.04```
 
-### 1. PyPI installation
+## 2. Clone the Repository
+Checkout to ****branch name
 
-CrossASR++ is designed and tested to run with Python 3. CrossASR++ can be installed from the PyPi repository using this command
+## 3. Open a new WSL Terminal on Your IDE
+```cd examples```
 
-```pip install crossasr```
+## 4. On the 'examples' directory, execute the following commands to set up
 
-### 2. Manual installation
+### 4.1. Install the Python development environment
 
-The most recent version of CrossASR++ can be cloned from this repository using this command
-
-```git clone https://github.com/soarsmu/CrossASRplus```
-
-Install CrossASR++ with the following command from the project folder CrossASRplus, using this command
-
-```pip install .```
-
-## Extensibility
-
-We devote more engineering effort to enhancing the extensibility of CrossASR++. We reimplement all necessary processes in CrossASR and pay attention to the extensibility of the tool. The extensibility is mainly enhanced by modeling the TTS, ASR, and failure estimator with several interfaces, i.e. abstract base classes. Users can add a new TTS, a new ASR or a new failure estimator by simply inheriting the base class and implementing necessary methods.
-
-We have 3 base classes, i.e. `ASR`, `TTS`, and `Estimator`. When inheriting from each class, users need to specify a name in the constructor. This name will be associated with a folder for saving the audio files and transcriptions. Thus having a unique name for each class is required. When inheriting `ASR` base class, users must override the `recognizeAudio()` method which takes an audio as input and returns recognized transcription. TTS and failure estimator can be added similarly. In `TTS` base class, the method `generateAudio()` must be overrided by inherited classes. This method converts a piece of text into audio. In `Estimator` base class, methods `fit()` and `predict()` must be overrided by inherited classes. These methods are used for training and predicting, respectively.
-
-
-### 1. Adding a TTS
-
-To add a TTS, you need to create a class inherited from `TTS` interface. You must override the function for generating an audio.
-
-```python
-class TTS:
-
-    def __init__(self, name):
-        self.name = name
-
-    def generateAudio(self, text:str, audio_fpath: str):
-        """
-        Generate audio from text. Save the audio at audio_fpath. 
-        This is an abstract function that needs to be implemented by the child class
-
-        :param text: input text
-        :param audio_fpath: location to save the audio
-        """
-        raise NotImplementedError()
+```bash
+sudo apt update
+sudo apt install python3-dev python3-pip python3-venv
 ```
 
-### 2. Adding an ASR
+### 4.2. Create a virtual environment
 
-To add an ASR, you need to create a class inherited from `ASR` interface. You must override the function for recognizing an audio.
+Create a new virtual environment by choosing a Python interpreter and making a ./env directory to hold it:
 
-```python
-class ASR:
-    
-    def __init__(self, name):
-        self.name = name
-    
-    def recognizeAudio(self, audio_fpath: str) -> str:
-        """
-        Recognize audio file. Return the transcription
-        This is an abstract function that needs to be implemented by the child class
-
-        :param audio_fpath: location to load the audio
-        :return transcription: transcription from the audio
-        """
-        raise NotImplementedError()
+```bash
+python3 -m venv --system-site-packages ~/./env
 ```
 
-### 3. Adding an Estimator
+Activate the virtual environment using a shell-specific command:
 
-To add an Estimator, you need to create a class inherited from `Estimator` interface. You must override the function for training and predicting.
-```python
-class Estimator:
-    def __init__(self, name:str):
-        self.name = name
-
-    def fit(self, X:[str], y:[int]):
-        raise NotImplementedError()
-
-    def predict(self, X:[str]):
-        raise NotImplementedError()
-
-```
-### Real-world Examples
-
-To make CrossASR++ a plug-and-play tool, we have incorporated some latest components. The suppported TTSes are [Google Translate’s TTS](https://pypi.org/project/gTTS/), [ResponsiveVoice](https://pypi.org/project/rvtts/), [Festival](https://www.cstr.ed.ac.uk/projects/festival/), and [Espeak](http://espeak.sourceforge.net). The supported ASRs are [DeepSpeech](https://pypi.org/project/deepspeech/), [DeepSpeech2](https://github.com/PaddlePaddle/DeepSpeech), [Wit](https://wit.ai), and [wav2letter++](https://github.com/flashlight/wav2letter). CrossASR++ supports any transformed-based classifier available at [HuggingFace](https://huggingface.co). CrossASR++ can also be easily extended to leverage more advanced tools in the future.
-
-We provide real examples for cross-referencing ASR systems in folder [`examples`](https://github.com/soarsmu/CrossASRplus/tree/main/examples). It provides clear instruction on how to create the suppported TTS, ASR, and Estimator and how to test a specific ASR system.
-
-### Automatically Save Data
-
-CrossASR++ automatically save the audio files and their transcriptions (along with their execution times) to help researchers save their time when developing failure estimators. 
-
-
-### Please cite our work!
-
-```
-@INPROCEEDINGS{Asyrofi2021CrossASRplus,  
-    author={M. H. {Asyrofi} and Z. {Yang} and D. {Lo}},  
-    booktitle={Proceedings of the 29th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE '21), August 23--28, 2021, Athens, Greece},
-    title={CrossASR++: : A Modular Differential Testing Framework for Automatic Speech Recognition},   
-    year={2021},  volume={},  number={},  
-    pages={},  
-    doi={10.1145/3468264.3473124}}
-    
-@INPROCEEDINGS{Asyrofi2020CrossASR,  
-    author={M. H. {Asyrofi} and F. {Thung} and D. {Lo} and L. {Jiang}},  
-    booktitle={2020 IEEE International Conference on Software Maintenance and Evolution (ICSME)},
-    title={CrossASR: Efficient Differential Testing of Automatic Speech Recognition via Text-To-Speech},   
-    year={2020},  volume={},  number={},  
-    pages={640-650},  
-    doi={10.1109/ICSME46990.2020.00066}}
-    
+```bash
+source ~/./env/bin/activate  # sh, bash, or zsh
+pip install crossasr
+bash install_requirement.sh
 ```
 
+### Preparation
+
+Make a folder to save the output
+
+```bash
+if [ ! -d "output/" ]
+then
+    mkdir output/
+fi
+
+if [ ! -d "output/audio/" ]
+then
+    mkdir output/audio/
+fi
+```
+
+## 5. Prepare TTSes
+
+### 5.1. Google
+We use [gTTS](https://pypi.org/project/gTTS/) (Google Text-to-Speech), a Python library and CLI tool to interface with Google Translate text-to-speech API.
+
+```bash
+pip install gTTS
+```
+
+#### Trial
+```bash
+mkdir output/audio/google/
+gtts-cli 'hello world google' --output output/audio/google/hello.mp3
+ffmpeg -i output/audio/google/hello.mp3  -acodec pcm_s16le -ac 1 -ar 16000 output/audio/google/hello.wav -y
+```
+
+### 5.2. Espeak
+
+[eSpeak](http://espeak.sourceforge.net/) is a compact open source software speech synthesizer for English and other languages.
+
+```bash
+sudo apt install espeak -y
+
+mkdir output/audio/espeak/
+espeak "hello e speak" --stdout > output/audio/espeak/hello.riff
+ffmpeg -i output/audio/espeak/hello.riff  -acodec pcm_s16le -ac 1 -ar 16000 output/audio/espeak/hello.wav -y
+```
+### 5.3. Festival
+[Festival](http://www.cstr.ed.ac.uk/projects/festival/) is a free TTS written in C++. It is developed by The Centre for Speech Technology Research at the University of Edinburgh. Festival are distributed under an X11-type licence allowing unrestricted commercial and non-commercial use alike. Festival is a command-line program that already installed on Ubuntu 16.04.
+
+#### Trial
+```bash
+sudo apt install festival -y
+mkdir output/audio/festival/
+festival -b "(utt.save.wave (SayText \"hello festival \") \"output/audio/festival/hello.wav\" 'riff)"
+```
+
+### 5.4. GlowTTS
+
+```bash
+pip install TTS
+```
+
+## 6. Prepare ASRs
+
+### 6.1. Deepspeech
+
+[DeepSpeech](https://github.com/mozilla/DeepSpeech) is an open source Speech-To-Text engine, using a model trained by machine learning techniques based on [Baidu's Deep Speech research paper](https://arxiv.org/abs/1412.5567). **CrossASR++ uses [Deepspeech-0.9.3](https://github.com/mozilla/DeepSpeech/releases/tag/v0.9.3)**
+
+```bash
+pip install deepspeech===0.9.3
+
+if [ ! -d "asr_models/" ]
+then 
+    mkdir asr_models
+fi
+
+cd asr_models
+mkdir deepspeech
+cd deepspeech 
+curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm
+curl -LO https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer
+cd ../../
+```
+
+Please follow [this link for more detailed installation](https://github.com/mozilla/DeepSpeech/tree/v0.9.3).
+
+#### Trial
+```bash
+deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer asr_models/deepspeech/deepspeech-0.9.3-models.scorer --audio output/audio/google/hello.wav
+```
 
