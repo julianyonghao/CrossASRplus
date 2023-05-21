@@ -12,8 +12,10 @@ PDF preprint is [available](https://mhilmiasyrofi.github.io/papers/CrossASRv2.pd
 ## 1. WSL Installation (Windows)
 1.1 Open Start on Windows > Search "Turn Windows features on or off"
 1.2 Check "Virtual Machine Platform" and "Windows Subsystem for Linux"
-1.3 Open command prompt
+1.3 Open command prompt and run
+
 ```wsl --update```
+
 ```wsl.exe --install Ubuntu-20.04```
 
 ## 2. Clone the Repository
@@ -46,6 +48,12 @@ source ~/./env/bin/activate  # sh, bash, or zsh
 pip install crossasr
 bash install_requirement.sh
 ```
+
+In this project we have modified code in the crossasr package.
+
+Therefore, you will need to manually copy the 'crossasr' directory and their contents in the repository.
+And overwrite the 'crossasr' directory in your WSL python package directory: \\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr
+
 
 ### Preparation
 
@@ -135,3 +143,91 @@ Please follow [this link for more detailed installation](https://github.com/mozi
 deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer asr_models/deepspeech/deepspeech-0.9.3-models.scorer --audio output/audio/google/hello.wav
 ```
 
+### 6.2. Deepspeech2
+
+[DeepSpeech2](https://github.com/PaddlePaddle/DeepSpeech) is an open-source implementation of end-to-end Automatic Speech Recognition (ASR) engine, based on [Baidu's Deep Speech 2 paper](http://proceedings.mlr.press/v48/amodei16.pdf), with [PaddlePaddle](https://github.com/PaddlePaddle/Paddle) platform.
+
+#### Setup a docker container for Deepspeech2
+
+[Original Source](https://github.com/PaddlePaddle/DeepSpeech#running-in-docker-container)
+
+```bash
+cd asr_models/
+git clone https://github.com/PaddlePaddle/DeepSpeech.git
+cd DeepSpeech
+git checkout tags/v1.1
+cp ../../asr/deepspeech2_api.py .
+cd models/librispeech/
+sh download_model.sh
+cd ../../../../
+cd asr_models/DeepSpeech/models/lm
+sh download_lm_en.sh
+cd ../../../../
+docker pull perhoong/crossasr:deepspeech2
+
+# run this command from examples folder
+# please remove --gpus '"device=0"' if you only have one gpu
+docker run --name deepspeech2 --rm --gpus '"device=0"' -it -v $(pwd)/asr_models/DeepSpeech:/DeepSpeech -v $(pwd)/output/:/DeepSpeech/output/  perhoong/crossasr:deepspeech2 /bin/bash
+
+apt-get update
+apt-get install git -y
+cd DeepSpeech
+sh setup.sh
+apt-get install libsndfile1-dev -y
+``` 
+
+#### Run Deepspeech2 as an API (inside docker container)
+```bash
+pip install flask 
+
+# run inside /DeepSpeech folder in the container
+CUDA_VISIBLE_DEVICES=0 python deepspeech2_api.py \
+    --mean_std_path='models/librispeech/mean_std.npz' \
+    --vocab_path='models/librispeech/vocab.txt' \
+    --model_path='models/librispeech' \
+    --lang_model_path='models/lm/common_crawl_00.prune01111.trie.klm'
+```
+Then detach from the docker using ctrl+p & ctrl+q after you see `Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)`
+
+#### Run Client from the Terminal (outside docker container)
+
+```bash
+# run from examples folder in the host machine (outside docker)
+docker exec -it deepspeech2 curl http://localhost:5000/transcribe?fpath=output/audio/google/hello.wav
+```
+
+### 6.3. Vosk
+
+```pip3 install vosk```
+
+### 6.4. Wav2letter++
+
+[wav2letter++](https://github.com/facebookresearch/wav2letter) is a highly efficient end-to-end automatic speech recognition (ASR) toolkit written entirely in C++ by Facebook Research, leveraging ArrayFire and flashlight.
+
+Please find the lastest image of [wav2letter's docker](https://hub.docker.com/r/wav2letter/wav2letter/tags).
+
+```bash
+cd asr_models/
+mkdir wav2letter
+cd wav2letter
+
+for f in acoustic_model.bin tds_streaming.arch decoder_options.json feature_extractor.bin language_model.bin lexicon.txt tokens.txt ; do wget http://dl.fbaipublicfiles.com/wav2letter/inference/examples/model/${f} ; done
+
+ls -sh
+cd ../../
+```
+
+#### Run docker inference API
+```bash
+# run from examples folder
+docker run --name wav2letter -it --rm -v $(pwd)/output/:/root/host/output/ -v $(pwd)/asr_models/:/root/host/models/ --ipc=host -a stdin -a stdout -a stderr wav2letter/wav2letter:inference-latest
+```
+Then detach from the docker using ctrl+p & ctrl+q 
+
+#### Run Client from the Terminal
+
+```bash
+docker exec -it wav2letter sh -c "cat /root/host/output/audio/google/hello.wav | /root/wav2letter/build/inference/inference/examples/simple_streaming_asr_example --input_files_base_path /root/host/models/wav2letter/"
+```
+
+Detail of [wav2letter++ installation](https://github.com/facebookresearch/wav2letter/wiki#Installation) and [wav2letter++ inference](https://github.com/facebookresearch/wav2letter/wiki/Inference-Run-Examples)
