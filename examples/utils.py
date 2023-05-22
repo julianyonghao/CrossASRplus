@@ -10,7 +10,7 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 import torch
 import requests
 import time
-from wit import Wit as WitAPI
+# from wit import Wit as WitAPI
 # import nemo.collections.asr as nemo_asr
 
 from pool import asr_pool, tts_pool
@@ -32,7 +32,7 @@ from crossasr.textmodi import TextModi
 
 from estimator.huggingface import HuggingFaceTransformer
 
-from pocketsphinx import Decoder
+# from pocketsphinx import Decoder
 import wave
 
 
@@ -118,7 +118,7 @@ def readDirAsCorpus(corpus_fpath: str) :
 def parseConfig(config):
     conf = {}
     for k,v in config.items() :
-        if k != "tts" and k!= "asrs" and k != "estimator" and k != "target_asr":
+        if k != "tts" and k!= "asr" and k != "estimator" and k != "target_asr":
             conf[k] = v
     return conf
 

@@ -11,7 +11,9 @@ PDF preprint is [available](https://mhilmiasyrofi.github.io/papers/CrossASRv2.pd
 
 ## 1. WSL Installation (Windows)
 1.1 Open Start on Windows > Search "Turn Windows features on or off"
+
 1.2 Check "Virtual Machine Platform" and "Windows Subsystem for Linux"
+
 1.3 Open command prompt and run
 
 ```wsl --update```
@@ -47,6 +49,10 @@ Activate the virtual environment using a shell-specific command:
 source ~/./env/bin/activate  # sh, bash, or zsh
 pip install crossasr
 bash install_requirement.sh
+pip install pydub
+pip install transformers
+sudo apt install ffmpeg #exceute sudo apt update if you encounter a Not Found error
+sudo apt-get -y install sox
 ```
 
 In this project we have modified code in the crossasr package.
@@ -169,11 +175,6 @@ docker pull perhoong/crossasr:deepspeech2
 # please remove --gpus '"device=0"' if you only have one gpu
 docker run --name deepspeech2 --rm --gpus '"device=0"' -it -v $(pwd)/asr_models/DeepSpeech:/DeepSpeech -v $(pwd)/output/:/DeepSpeech/output/  perhoong/crossasr:deepspeech2 /bin/bash
 
-apt-get update
-apt-get install git -y
-cd DeepSpeech
-sh setup.sh
-apt-get install libsndfile1-dev -y
 ``` 
 
 #### Run Deepspeech2 as an API (inside docker container)

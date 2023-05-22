@@ -12,7 +12,7 @@ if __name__ == "__main__":
     config = utils.readJson(sys.argv[1]) # read json configuration file
 
     tts = utils.getTTSS(config["tts"])
-    asr = utils.getASRS(config["asrs"])
+    asr = utils.getASRS(config["asr"])
     target_asr = utils.getASR(config["target_asr"])
     estimator = utils.getEstimator(config["estimator"])
 
