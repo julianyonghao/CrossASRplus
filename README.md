@@ -13,9 +13,13 @@
 ```wsl.exe --install Ubuntu-20.04```
 
 ## 2. Clone the Repository
-Checkout to ****branch name
+2.1 Clone the repository to your WSL home directory e.g. \\wsl.localhost\Ubuntu-20.04\home\fit\CrossASRplus
+2.2 Checkout to ****branch name
 
-## 3. Open a new WSL Terminal on Your IDE
+## 3. Open the Project on Your IDE
+3.1 Create a new WSL terminal
+3.2 Change your directory to the 'examples' directory
+
 ```cd examples```
 
 ## 4. On the 'examples' directory, execute the following commands to set up
@@ -235,5 +239,18 @@ To start the experiment, execute the following command:
 
 ```python test_asr.py config_corpus.json```
 
-The config_corpus.json file describes the current experiment configurations like the ASR systems and TTS systems used, the target ASR, the directory for the datset, outpur directory, etc. 
+The config_corpus.json file describes the current experiment configurations like the ASR systems and TTS systems used, the target ASR, the directory for the dataset, output directory, etc.
 
+The results of this experiment is located in the 'output/casual_lj_demo_espeak_vosk' directory for this experiment.
+In the 'results' directory contains a .xlsx file and a .json file which describes the false alarm cases, WER, the number of false alarms and the number of executed cases per iteration.
+
+## 8. False Alarm Predictor
+We use [Anaconda](https://www.anaconda.com/download) a tool to manage packages and environments to train the False Alarm Predictor.
+
+A environment configuration file (tf_cpu_38.yaml) is included in the 'false_alarm_predictor' directory.
+
+Please import the environment configuration file to Anaconda in order to set up and install the required packages.
+
+The files used to train the predictor model is included under the 'training_files' directory.
+
+A Jupyter Notebook file named 'False_Alarm_Predictor_LJ_Libri.ipynb' describes the steps and code in training and evaluating the predictor model.
