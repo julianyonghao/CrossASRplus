@@ -1,7 +1,7 @@
 {
     "seed": 2021,
-    "output_dir": "output/casual_lj_test_speedyspeech/",
-    "corpus_fpath": "casual_data/Casual_Data_LJ/",
+    "output_dir": "output/casual_lj_demo_google_vosk/",
+    "corpus_fpath": "casual_data_demo/Casual_Data_LJ_demo/",
     "tts" : ["casual","google"],
     "asr" : ["wav2letter", "deepspeech", "deepspeech2", "vosk", "wav2vec2"],
     "target_asr" : "vosk",

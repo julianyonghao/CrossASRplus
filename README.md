@@ -1,14 +1,6 @@
 # Empirical Study on the False Alarms in Automated Speech Recognition Testing
-This repository is a code implementation for the paper ["Synthesizing Speech Test Cases with Text-To-Speech? An Empirical Study on the False Alarms in Automated Speech Recognition Testing"](https://rb.gy/r03ui). Our study investigates false alarm occurences in the usage of Text-To-Speech (TTS) systems to automatically synthesise speech test cases on Automated Speech Recognition (ASR) systems. To do so, we propose augmenting [CrossASR](https://github.com/soarsmu/CrossASRplus) with a false alarm predictor to help developers identify false alarms efficiently.
 
-Developers need to perform adequate testing to ensure the quality of Automatic Speech Recognition (ASR) systems. However, manually collecting required test cases is tedious and time-consuming. Our recent work proposes, namely [CrossASR](https://github.com/soarsmu/CrossASR), a differential testing method for ASR systems. This method first utilizes Text-to-Speech (TTS) to generate audios from texts automatically and then feed these audios into different ASR systems for cross-referencing to uncover failed test cases. It also leverages a failure estimator to find test cases more efficiently. Such a method is inherently self-improvable: the performance can increase by leveraging more advanced TTS and ASR systems. 
-
-So in this accompanying tool, we devote more engineering and propose **CrossASR++, an easy-to-use ASR testing tool that can be conveniently extended to incorporate different TTS and ASR systems and failure estimators**. We also make CrossASR++ chunk texts dynamically and enable the estimator to work in a more efficient and flexible way. We demonstrate that the new features can help CrossASR++ discover more failed test cases.
-
-Please check our Tool Demo Video at [https://www.youtube.com/watch?v=ddRk-f0QV-g](https://www.youtube.com/watch?v=ddRk-f0QV-g)
-
-PDF preprint is [available](https://mhilmiasyrofi.github.io/papers/CrossASRv2.pdf)
-
+# Getting Started
 ## 1. WSL Installation (Windows)
 1.1 Open Start on Windows > Search "Turn Windows features on or off"
 
@@ -55,10 +47,9 @@ sudo apt install ffmpeg #exceute sudo apt update if you encounter a Not Found er
 sudo apt-get -y install sox
 ```
 
-In this project we have modified code in the crossasr package.
-
-Therefore, you will need to manually copy the 'crossasr' directory and their contents in the repository.
-And overwrite the 'crossasr' directory in your WSL python package directory: \\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr
+**In this project we have modified code in the crossasr package.**
+**Therefore, you will need to manually copy the 'crossasr' directory and their contents in the repository.**
+**And overwrite the 'crossasr' directory in your WSL python package directory: \\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr**
 
 
 ### Preparation
@@ -80,7 +71,7 @@ fi
 ## 5. Prepare TTSes
 
 ### 5.1. Google
-We use [gTTS](https://pypi.org/project/gTTS/) (Google Text-to-Speech), a Python library and CLI tool to interface with Google Translate text-to-speech API.
+[gTTS](https://pypi.org/project/gTTS/) (Google Text-to-Speech).
 
 ```bash
 pip install gTTS
@@ -95,7 +86,7 @@ ffmpeg -i output/audio/google/hello.mp3  -acodec pcm_s16le -ac 1 -ar 16000 outpu
 
 ### 5.2. Espeak
 
-[eSpeak](http://espeak.sourceforge.net/) is a compact open source software speech synthesizer for English and other languages.
+[eSpeak](http://espeak.sourceforge.net/).
 
 ```bash
 sudo apt install espeak -y
@@ -105,7 +96,7 @@ espeak "hello e speak" --stdout > output/audio/espeak/hello.riff
 ffmpeg -i output/audio/espeak/hello.riff  -acodec pcm_s16le -ac 1 -ar 16000 output/audio/espeak/hello.wav -y
 ```
 ### 5.3. Festival
-[Festival](http://www.cstr.ed.ac.uk/projects/festival/) is a free TTS written in C++. It is developed by The Centre for Speech Technology Research at the University of Edinburgh. Festival are distributed under an X11-type licence allowing unrestricted commercial and non-commercial use alike. Festival is a command-line program that already installed on Ubuntu 16.04.
+[Festival](http://www.cstr.ed.ac.uk/projects/festival/)
 
 #### Trial
 ```bash
@@ -124,7 +115,7 @@ pip install TTS
 
 ### 6.1. Deepspeech
 
-[DeepSpeech](https://github.com/mozilla/DeepSpeech) is an open source Speech-To-Text engine, using a model trained by machine learning techniques based on [Baidu's Deep Speech research paper](https://arxiv.org/abs/1412.5567). **CrossASR++ uses [Deepspeech-0.9.3](https://github.com/mozilla/DeepSpeech/releases/tag/v0.9.3)**
+[DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
 ```bash
 pip install deepspeech===0.9.3
@@ -151,7 +142,7 @@ deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer a
 
 ### 6.2. Deepspeech2
 
-[DeepSpeech2](https://github.com/PaddlePaddle/DeepSpeech) is an open-source implementation of end-to-end Automatic Speech Recognition (ASR) engine, based on [Baidu's Deep Speech 2 paper](http://proceedings.mlr.press/v48/amodei16.pdf), with [PaddlePaddle](https://github.com/PaddlePaddle/Paddle) platform.
+[DeepSpeech2](https://github.com/PaddlePaddle/DeepSpeech)
 
 #### Setup a docker container for Deepspeech2
 
@@ -203,7 +194,7 @@ docker exec -it deepspeech2 curl http://localhost:5000/transcribe?fpath=output/a
 
 ### 6.4. Wav2letter++
 
-[wav2letter++](https://github.com/facebookresearch/wav2letter) is a highly efficient end-to-end automatic speech recognition (ASR) toolkit written entirely in C++ by Facebook Research, leveraging ArrayFire and flashlight.
+[wav2letter++](https://github.com/facebookresearch/wav2letter)
 
 Please find the lastest image of [wav2letter's docker](https://hub.docker.com/r/wav2letter/wav2letter/tags).
 
@@ -232,3 +223,17 @@ docker exec -it wav2letter sh -c "cat /root/host/output/audio/google/hello.wav |
 ```
 
 Detail of [wav2letter++ installation](https://github.com/facebookresearch/wav2letter/wiki#Installation) and [wav2letter++ inference](https://github.com/facebookresearch/wav2letter/wiki/Inference-Run-Examples)
+
+
+## 7. Running a Small Example
+We have included a small subset of data from the LJ Dataset in the 'casual_data_demo' directory.
+To run the example experiment, please ensure that you are currently on the 'examples' directory. If not run:
+
+```cd examples```
+
+To start the experiment, execute the following command:
+
+```python test_asr.py config_corpus.json```
+
+The config_corpus.json file describes the current experiment configurations like the ASR systems and TTS systems used, the target ASR, the directory for the datset, outpur directory, etc. 
+
