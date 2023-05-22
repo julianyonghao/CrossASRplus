@@ -1,0 +1,15 @@
+{
+    "seed": 2021,
+    "output_dir": "output/casual_lj_demo_espeak_vosk/",
+    "corpus_fpath": "casual_data_demo/Casual_Data_LJ_demo/",
+    "tts" : ["casual","espeak"],
+    "asr" : ["wav2vec2",  "vosk"],
+    "target_asr" : "vosk",
+    "recompute": false,
+    "time_budget": 42069,
+    "num_iteration": 2,
+    "text_batch_size": 10,
+    "estimator": "facebook/bart-base",
+    "audio_type": "audio",
+    "max_num_retry": 1
+}

@@ -181,3 +181,7 @@ examples/cuda-repo-wsl-ubuntu-11-8-local_11.8.0-1_amd64.deb.5
 examples/cuda-repo-wsl-ubuntu-11-8-local_11.8.0-1_amd64.deb.7
 
 examples/cuda-repo-wsl-ubuntu-11-8-local_11.8.0-1_amd64.deb.8
+
+demo_issta/output/
+demo_issta/asr_models/
+demo_issta/casual_data
