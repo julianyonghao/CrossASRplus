@@ -20,9 +20,7 @@
 ## 3. Open the Project on Your IDE
 3.1 Create a new WSL terminal
 
-3.2 Change your directory to the ```demo_issta``` directory
-
-```cd examples```
+3.2 Change your directory to the ```demo_issta``` directory e.g ```cd demo_issta```
 
 ## 4. On the 'examples' directory, execute the following commands to set up
 
@@ -125,6 +123,6 @@ The config_corpus.json file describes the current experiment configurations like
 In this demo experiment, we use Espeak TTS, Wav2Vec2 ASR and Vosk ASR.
 
 The results of this experiment is located in the ```output/casual_lj_demo_espeak_vosk``` directory for this experiment.
-In the 'results' directory contains a .xlsx file and a .json file which describes the false alarm cases, WER, the number of false alarms and the number of executed cases per iteration.
+In the ```results``` directory contains a .xlsx file and a .json file which describes the false alarm cases, WER, the number of false alarms and the number of executed cases per iteration.
 
 
