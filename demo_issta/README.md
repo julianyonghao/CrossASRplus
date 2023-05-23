@@ -13,12 +13,14 @@
 ```wsl.exe --install Ubuntu-20.04```
 
 ## 2. Clone the Repository
-2.1 Clone the repository to your WSL home directory e.g. \\wsl.localhost\Ubuntu-20.04\home\fit\CrossASRplus
-2.2 Checkout to ****branch name
+2.1 Clone the repository to your WSL home directory e.g. ```\\wsl.localhost\Ubuntu-20.04\home\fit\FAinASRtest```
+
+2.2 Checkout to ```main``` branch
 
 ## 3. Open the Project on Your IDE
 3.1 Create a new WSL terminal
-3.2 Change your directory to the 'examples' directory
+
+3.2 Change your directory to the ```demo_issta``` directory
 
 ```cd examples```
 
@@ -52,8 +54,10 @@ sudo apt-get -y install sox
 ```
 
 **In this project we have modified code in the crossasr package.**
+
 **Therefore, you will need to manually copy the 'crossasr' directory and their contents in the repository.**
-**And overwrite the 'crossasr' directory in your WSL python package directory: \\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr**
+
+**And overwrite the 'crossasr' directory in your WSL python package directory: ```\\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr```**
 
 
 ### Preparation
@@ -103,15 +107,14 @@ ffmpeg -i output/audio/espeak/hello.riff  -acodec pcm_s16le -ac 1 -ar 16000 outp
 ## 6. Prepare ASRs
 
 ### 6.1. Vosk
+[Vosk](https://alphacephei.com/vosk/)
 
 ```pip3 install vosk```
 
 
 ## 7. Running a Small Example
-We have included a small subset of data from the LJ Dataset in the 'casual_data_demo' directory.
-To run the example experiment, please ensure that you are currently on the 'examples' directory. If not run:
-
-```cd examples```
+We have included a small subset of data from the LJ Dataset in the ```casual_data_demo``` directory.
+To run the demo experiment, please ensure that you are currently on the ```demo_issta``` directory.
 
 To start the experiment, execute the following command:
 
@@ -121,18 +124,7 @@ The config_corpus.json file describes the current experiment configurations like
 
 In this demo experiment, we use Espeak TTS, Wav2Vec2 ASR and Vosk ASR.
 
-The results of this experiment is located in the 'output/casual_lj_demo_espeak_vosk' directory for this experiment.
+The results of this experiment is located in the ```output/casual_lj_demo_espeak_vosk``` directory for this experiment.
 In the 'results' directory contains a .xlsx file and a .json file which describes the false alarm cases, WER, the number of false alarms and the number of executed cases per iteration.
-
-## 8. False Alarm Predictor
-We use [Anaconda](https://www.anaconda.com/download) a tool to manage packages and environments.
-
-A environment configuration file (tf_cpu_38.yaml) is included in the 'false_alarm_predictor' directory.
-
-Please import the environment configuration file to Anaconda in order to set up and install the required packages.
-
-The files used to train the predictor model is included under the 'training_files' directory.
-
-A Jupyter Notebook file named 'False_Alarm_Predictor_LJ_Libri.ipynb' describes the steps and code in training and evaluating the predictor model.
 
 
