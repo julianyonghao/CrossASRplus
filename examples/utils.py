@@ -4,16 +4,18 @@ import json
 import os, subprocess
 import gc
 import torch
+from pydub import AudioSegment
 import soundfile as sf
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
-
-
-import soundfile as sf
 import torch
+import requests
+import time
+# from wit import Wit as WitAPI
+# import nemo.collections.asr as nemo_asr
 
+from pool import asr_pool, tts_pool
 
 from gtts import gTTS
-
 from tts.rv import ResponsiveVoice
 from tts.google import Google
 from tts.espeak import Espeak
@@ -25,15 +27,16 @@ from asr.wav2letter import Wav2Letter
 from asr.wit import Wit
 from asr.wav2vec2 import Wav2Vec2
 
+from crossasr.text import Text
+from crossasr.textmodi import TextModi
+
 from estimator.huggingface import HuggingFaceTransformer
 
-from pool import asr_pool, tts_pool
-from crossasr.text import Text
+# from pocketsphinx import Decoder
+import wave
 
-from wit import Wit as WitAPI
 
 WIT_ACCESS_TOKEN = os.getenv("WIT_ACCESS_TOKEN")
-wit_client = WitAPI(WIT_ACCESS_TOKEN)
 
 tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
@@ -43,7 +46,17 @@ def getTTS(tts_name: str):
     for tts in tts_pool :
         if tts_name == tts.getName() :
             return tts
-    raise NotImplementedError("There is a TTS name problem")    
+    raise NotImplementedError("There is a TTS name problem")
+
+def getTTSS(tts_names):
+    ttss = []
+    for tts in tts_pool:
+        for tts_name in tts_names :
+            if tts_name == tts.getName():
+                ttss.append(tts)
+    if len(tts_names) == len(ttss) :
+        return ttss
+    raise NotImplementedError("There is an TTS name problem")
 
 
 def getASR(asr_name: str):
@@ -89,11 +102,23 @@ def readCorpus(corpus_fpath: str) :
         texts.append(Text(i, text[:-1]))
         i += 1
     return texts
+
+def readDirAsCorpus(corpus_fpath: str) :
+    texts = []
+    for subdir, dirs, files in os.walk(corpus_fpath):
+        for ori_file in files:
+            try:
+                file = open(os.path.join(corpus_fpath, ori_file))
+                text = file.readlines()
+                texts.append(TextModi(ori_file.split(".")[0], text[0]))
+            except:
+                continue
+    return texts
     
 def parseConfig(config):
     conf = {}
     for k,v in config.items() :
-        if k != "tts" and k!= "asrs" and k != "corpus_fpath" and k != "estimator":
+        if k != "tts" and k!= "asr" and k != "estimator" and k != "target_asr":
             conf[k] = v
     return conf
 
@@ -104,6 +129,41 @@ def googleGenerateAudio(text, audio_fpath):
     googleTTS.save(tempfile)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def tacotronGenerateAudio(text, audio_fpath):
+    tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
+    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/tacotron2-DDC\" --out_path " + tempfile
+    print(cmd)
+    os.system(cmd)
+    setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
+    os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def glowttsGenerateAudio(text, audio_fpath):
+    tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
+    cmd = "tts --text \"" + text + "\" --model_name \"tts_models/en/ljspeech/glow-tts\" --out_path " + tempfile
+    print("=================")
+    print(cmd)
+    os.system(cmd)
+    setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
+    os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def speedyspeechGenerateAudio(text, audio_fpath):
+    os.makedirs(os.path.dirname(audio_fpath), exist_ok=True)
+    words = len(text.split())
+
+    if text[len(text)-1] == ".":
+        text = text[:len(text)-1]
+    text += " ."
+
+    cmd = "tts --text \"" + text + \
+        "\" --model_name \"tts_models/en/ljspeech/speedy-speech\"" + \
+        " --out_path " + audio_fpath
+
+    if words >= 4:
+        os.system(cmd)
+    else:
+        silent_audio = AudioSegment.silent(duration=3000)
+        silent_audio.export(audio_fpath, format="wav")
 
 def rvGenerateAudio(text, audio_fpath):
     tempfile = audio_fpath.split(".")[0] + "-temp.mp3"
@@ -123,6 +183,9 @@ def espeakGenerateAudio(text, audio_fpath) :
     os.system(cmd)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
+
+def getCCVoice(file_name, audio_fpath):
+    raise NotImplementedError
 
 def deepspeechRecognizeAudio(audio_fpath):
     cmd = "deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer asr_models/deepspeech/deepspeech-0.9.3-models.scorer --audio " + audio_fpath
@@ -194,8 +257,10 @@ def wav2vec2RecognizeAudio(audio_fpath) :
 
     return transcription
 
-def witRecognizeAudio(audio_fpath):
+def witRecognizeAudio(audio_fpath, token):
+    wit_client = WitAPI(token)
     transcription = ""
+
     with open(audio_fpath, 'rb') as audio:
         try:
             wit_transcription = wit_client.speech(
@@ -208,8 +273,70 @@ def witRecognizeAudio(audio_fpath):
             # print("Could not request results from Wit.ai service; {0}".format(e))
             transcription = ""
 
-    # print(f"Wit transcription: {transcription}")
+        random_number = float(random.randint(9, 47)) / 10.
+        time.sleep(random_number)
+        
     return transcription
+
+def nemoRecognizeAudio(audio_fpath):
+    asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("nvidia/stt_en_conformer_ctc_large")
+    # asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_citrinet_512")
+    transcription = asr_model.transcribe([audio_fpath])
+    return transcription[0]
+
+def pocketRecognizeAudio(audio_fpath):
+    with wave.open(audio_fpath, "rb") as audio:
+        decoder = Decoder(samprate=audio.getframerate())
+        decoder.start_utt()
+        decoder.process_raw(audio.getfp().read(), full_utt=True)
+        decoder.end_utt()
+        return decoder.hyp().hypstr
+
+def voskRecognizeAudio(audio_fpath):
+    cmd = " vosk-transcriber -i " + audio_fpath
+
+    proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+
+    transcription = out.decode("utf-8")[:-1]
+
+    # print("DeepSpeech transcription: %s" % transcription)
+    return transcription
+
+# 7/9 - ziqian added a new asr (AssemblyAI)
+def assembly_read_file(audio_fpath, chunk_size=5242880):
+    with open(audio_fpath, 'rb') as _file:
+        while True:
+            data = _file.read(chunk_size)
+            if not data:
+                break
+            yield data
+
+def assemblyRecognizeAudio(audio_fpath, token):
+    headers = {'authorization': token}
+    response = requests.post('https://api.assemblyai.com/v2/upload',headers=headers,data=assembly_read_file(audio_fpath))
+
+    temp = response.json().get("upload_url")
+    endpoint = "https://api.assemblyai.com/v2/transcript"
+    json = {"audio_url": str(temp)}
+    headers = {
+        "authorization": token,
+        "content-type": "application/json"
+    }
+    response = requests.post(endpoint, json=json, headers=headers)
+
+    status = response.json().get("status")
+    # retrieve results
+    while status != "completed":
+        time.sleep(10)
+        transcription_id = response.json().get("id")
+        endpoint = "https://api.assemblyai.com/v2/transcript/" + str(transcription_id)
+        headers = {
+            "authorization": token,
+        }
+        response = requests.get(endpoint, headers=headers)
+        status = response.json().get("status")
+    return response.json().get("text")
 
 
 def create_huggingface_estimator_by_name(name: str):

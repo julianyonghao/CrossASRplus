@@ -1,5 +1,8 @@
 {
-    "output_dir": "output/trial/",
-    "tts" : "rv",
-    "asrs" : ["wav2vec2", "deepspeech2", "wav2letter", "wit"]
+    "output_dir": "output/",
+    "tts" : ["casual", "google"],
+    "asr" : ["wit", "wav2vec2"],
+    "target_asr": "wit",
+    "audio_type": "audio"
 }
+

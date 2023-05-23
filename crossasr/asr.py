@@ -37,5 +37,4 @@ class ASR:
         if len(lines) == 0 : return ""
         transcription = lines[0]
         f.close()
-
         return transcription
