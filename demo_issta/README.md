@@ -22,7 +22,7 @@
 
 3.2 Change your directory to the ```demo_issta``` directory e.g ```cd demo_issta```
 
-## 4. On the 'examples' directory, execute the following commands to set up
+## 4. On the 'demo_issta' directory, execute the following commands to set up
 
 ### 4.1. Install the Python development environment
 
