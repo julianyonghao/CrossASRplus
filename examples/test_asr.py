@@ -21,7 +21,6 @@ if __name__ == "__main__":
     corpus_fpath = os.path.join(config["corpus_fpath"], "transcription")
     texts = utils.readDirAsCorpus(corpus_fpath=corpus_fpath)
     crossasr.processCorpus(texts=texts)
-    # crossasr.printStatistic()
 
 
     

@@ -53,9 +53,9 @@ sudo apt-get -y install sox
 
 **In this project we have modified code in the crossasr package.**
 
-**Therefore, you will need to manually copy the 'crossasr' directory and their contents in the repository.**
+**Therefore, you will need to manually copy the 'crossasr' directory and their contents in this repository.**
 
-**And overwrite the 'crossasr' directory in your WSL python package directory: ```\\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr```**
+**And overwrite the 'crossasr' directory and its contents in your WSL python package directory: ```\\wsl.localhost\Ubuntu-20.04\home\fit\env\lib\python3.8\site-packages\crossasr``` with the one you have copied on the previous step**
 
 
 ### Preparation

@@ -10,21 +10,12 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 import torch
 import requests
 import time
-# from wit import Wit as WitAPI
-# import nemo.collections.asr as nemo_asr
-
 from pool import asr_pool, tts_pool
-
 from tts.espeak import Espeak
-
 from asr.deepspeech import DeepSpeech
-
 from crossasr.text import Text
 from crossasr.textmodi import TextModi
-
 from estimator.huggingface import HuggingFaceTransformer
-
-# from pocketsphinx import Decoder
 import wave
 
 
@@ -79,7 +70,6 @@ def set_seed(seed: int) :
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
 
-
 def readJson(config_path: str):
     with open(config_path, 'r') as f:
         config = json.load(f)
@@ -114,14 +104,12 @@ def parseConfig(config):
             conf[k] = v
     return conf
 
-
 def espeakGenerateAudio(text, audio_fpath) :
     tempfile = audio_fpath.split(".")[0] + "-temp.wav"
     cmd = "espeak \"" + text + "\" --stdout > " + tempfile
     os.system(cmd)
     setting = " -acodec pcm_s16le -ac 1 -ar 16000 "
     os.system(f"ffmpeg -i {tempfile} {setting} {audio_fpath} -y")
-
 
 def deepspeechRecognizeAudio(audio_fpath):
     cmd = "deepspeech --model asr_models/deepspeech/deepspeech-0.9.3-models.pbmm --scorer asr_models/deepspeech/deepspeech-0.9.3-models.scorer --audio " + audio_fpath
@@ -131,18 +119,14 @@ def deepspeechRecognizeAudio(audio_fpath):
 
     transcription = out.decode("utf-8")[:-1]
     
-    # print("DeepSpeech transcription: %s" % transcription)
     return transcription
-
-
 
 def wav2vec2RecognizeAudio(audio_fpath) :
     audio_input, _ = sf.read(audio_fpath)
 
-    # transcribe
+    # Transcribe
     input_values = tokenizer(
         audio_input, return_tensors="pt").input_values
-    # input_values = input_values.to(self.device)
 
     logits = model(input_values).logits
     predicted_ids = torch.argmax(logits, dim=-1)
@@ -162,7 +146,6 @@ def voskRecognizeAudio(audio_fpath):
 
     transcription = out.decode("utf-8")[:-1]
 
-    # print("DeepSpeech transcription: %s" % transcription)
     return transcription
 
 
@@ -172,7 +155,6 @@ def create_huggingface_estimator_by_name(name: str):
 
 def create_tts_by_name(name: str):
     return getTTS(name)
-
 
 def create_asr_by_name(name: str):
     return getASR(name)

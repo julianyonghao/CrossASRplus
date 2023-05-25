@@ -17,7 +17,6 @@ def is_empty_file(fpath:str) -> bool:
         return True
     return False
 
-
 def recognize(tts_name: str, asr_name: str, data_dir: str, execution_time_dir: str):
     asr = create_asr_by_name(asr_name)
     audio_dir = os.path.join(data_dir, AUDIO_DIR, tts_name)
@@ -58,7 +57,6 @@ def recognize(tts_name: str, asr_name: str, data_dir: str, execution_time_dir: s
 if __name__ == "__main__":
     
     json_config_path = "config-dev-other.json"
-    # json_config_path = "config.json"
     config = read_json(json_config_path)
 
     set_seed(config["seed"])
@@ -67,15 +65,9 @@ if __name__ == "__main__":
     output_dir = config["output_dir"]
     data_dir = os.path.join(output_dir, DATA_DIR)
     execution_time_dir = os.path.join(output_dir, EXECUTION_TIME_DIR)
-
-    # tts_name = "google"
     
     tts_name = config["tts"]
     asr_name = "deepspeech"
 
-    
     recognize(tts_name, asr_name, data_dir, execution_time_dir)
 
-    # for asr_name in ["deepspeech", "deepspeech2", "wav2letter", "wit", "wav2vec2"] :
-    # for asr_name in ["wav2vec2"]:
-    #     recognize(tts_name, asr_name, data_dir, execution_time_dir)

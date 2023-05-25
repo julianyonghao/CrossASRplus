@@ -140,18 +140,6 @@ def file_to_transcript(filename):
             num_processes=1)
     return result_transcript[0] + "\n"
 
-# transcription = file_to_transcript(args.filename)
-# print(transcription)
-
-# def main():
-#     if args.filename == "" :
-#         print("Please specify a path to the audio file")
-#         exit(0)
-#     else :
-#         # print_arguments(args)
-#         infer()
-
-
 from flask import Flask
 app = Flask(__name__)
 from flask import request

@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
     cc_filename = "LJ001-0001"
 
-    # casual_dir = os.path.join(CASUAL_DIR, cc_audio_type)
     casual_dir = os.path.join("casual_data/Casual_Data_LJ/")
     fpath = os.path.join(casual_dir, "transcription", cc_filename + ".txt")
     casual_audio_dir = os.path.join(casual_dir, "audio")
@@ -32,5 +31,4 @@ if __name__ == "__main__":
 
     cases = crossasr.processText(text=text, filename=cc_filename, cc_dir=casual_audio_dir)
     print(cases)
-    # crossasr.printResult(text=text, filename=cc_filename)
 

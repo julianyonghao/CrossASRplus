@@ -10,8 +10,6 @@ from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
 import torch
 import requests
 import time
-# from wit import Wit as WitAPI
-# import nemo.collections.asr as nemo_asr
 
 from pool import asr_pool, tts_pool
 
@@ -32,7 +30,6 @@ from crossasr.textmodi import TextModi
 
 from estimator.huggingface import HuggingFaceTransformer
 
-# from pocketsphinx import Decoder
 import wave
 
 
@@ -195,7 +192,6 @@ def deepspeechRecognizeAudio(audio_fpath):
 
     transcription = out.decode("utf-8")[:-1]
     
-    # print("DeepSpeech transcription: %s" % transcription)
     return transcription
 
 
@@ -208,7 +204,6 @@ def deepspeech2RecognizeAudio(audio_fpath) :
     transcription = out.decode("utf-8").split("\n")[-2]
     transcription = transcription[:-1]
 
-    # print("DeepSpeech2 transcription: %s" % transcription)
     return transcription
 
 def wav2letterRecognizeAudio(audio_fpath):
@@ -219,10 +214,8 @@ def wav2letterRecognizeAudio(audio_fpath):
                             stdout=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
 
-    # print(out)
     transcription = concatWav2letterTranscription(out)
 
-    # print(f"Wav2letter transcription: {transcription}")
     return transcription
 
 def concatWav2letterTranscription(out):
@@ -242,10 +235,9 @@ def concatWav2letterTranscription(out):
 def wav2vec2RecognizeAudio(audio_fpath) :
     audio_input, _ = sf.read(audio_fpath)
 
-    # transcribe
+    # Transcribe
     input_values = tokenizer(
         audio_input, return_tensors="pt").input_values
-    # input_values = input_values.to(self.device)
 
     logits = model(input_values).logits
     predicted_ids = torch.argmax(logits, dim=-1)
@@ -280,7 +272,6 @@ def witRecognizeAudio(audio_fpath, token):
 
 def nemoRecognizeAudio(audio_fpath):
     asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("nvidia/stt_en_conformer_ctc_large")
-    # asr_model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained("stt_en_citrinet_512")
     transcription = asr_model.transcribe([audio_fpath])
     return transcription[0]
 
@@ -300,10 +291,8 @@ def voskRecognizeAudio(audio_fpath):
 
     transcription = out.decode("utf-8")[:-1]
 
-    # print("DeepSpeech transcription: %s" % transcription)
     return transcription
 
-# 7/9 - ziqian added a new asr (AssemblyAI)
 def assembly_read_file(audio_fpath, chunk_size=5242880):
     with open(audio_fpath, 'rb') as _file:
         while True:
