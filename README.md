@@ -4,6 +4,8 @@ Text-To-Speech (TTS) systems have been suggested in recent studies as a means to
 
 To investigate this, we explore the occurrences of false alarms in five popular ASR systems by testing the ASR systems ([Deepspeech](https://github.com/mozilla/DeepSpeech), [Deepspeech2](https://github.com/PaddlePaddle/PaddleSpeech), [Vosk](https://github.com/alphacep/vosk-api), [Wav2letter++](https://github.com/flashlight/wav2letter), [Wav2vec2](https://huggingface.co/docs/transformers/model_doc/wav2vec2)) with synthetic speech generated using four popular TTS systems ([Google](https://cloud.google.com/text-to-speech), [GlowTTS](https://github.com/jaywalnut310/glow-tts.git), [Festival](http://www.cstr.ed.ac.uk/projects/festival/), [Espeak](http://espeak.sourceforge.net)) and human audio of the same texts. The human audio and texts are from two popular datasets - LJ Speech Dataset and LibriSpeech Dataset. 
 
+Additionally, We propose a false alarm predictor, based on Recurrent Neural Networks(RNN), that flags possible false alarms when ASR is tested with TTS-generated speech.
+
 ## Getting Started
 Navigate to the ```demo_issta``` directory for instructions in running a minimal version of the experiment.
 
